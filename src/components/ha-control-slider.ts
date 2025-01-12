@@ -1,18 +1,11 @@
 import { DIRECTION_ALL, Manager, Pan, Tap } from "@egjs/hammerjs";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  nothing,
-  PropertyValues,
-  TemplateResult,
-} from "lit";
+import type { CSSResultGroup, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { styleMap } from "lit/directives/style-map";
 import { fireEvent } from "../common/dom/fire_event";
-import { FrontendLocaleData } from "../data/translation";
+import type { FrontendLocaleData } from "../data/translation";
 import { formatNumber } from "../common/number/format_number";
 import { blankBeforeUnit } from "../common/translations/blank_before_unit";
 
@@ -66,6 +59,9 @@ export class HaControlSlider extends LitElement {
 
   @property({ attribute: "tooltip-mode" })
   public tooltipMode: TooltipMode = "interaction";
+
+  @property({ attribute: "touch-action" })
+  public touchAction?: string;
 
   @property({ type: Number })
   public value?: number;
@@ -152,7 +148,7 @@ export class HaControlSlider extends LitElement {
   setupListeners() {
     if (this.slider && !this._mc) {
       this._mc = new Manager(this.slider, {
-        touchAction: this.vertical ? "pan-x" : "pan-y",
+        touchAction: this.touchAction ?? (this.vertical ? "pan-x" : "pan-y"),
       });
       this._mc.add(
         new Pan({
@@ -219,12 +215,12 @@ export class HaControlSlider extends LitElement {
     return Math.max(this.step, (this.max - this.min) / 10);
   }
 
-  _showTooltip() {
+  private _showTooltip() {
     if (this._tooltipTimeout != null) window.clearTimeout(this._tooltipTimeout);
     this.tooltipVisible = true;
   }
 
-  _hideTooltip(delay?: number) {
+  private _hideTooltip(delay?: number) {
     if (!delay) {
       this.tooltipVisible = false;
       return;
@@ -234,7 +230,7 @@ export class HaControlSlider extends LitElement {
     }, delay);
   }
 
-  _handleKeyDown(e: KeyboardEvent) {
+  private _handleKeyDown(e: KeyboardEvent) {
     if (!A11Y_KEY_CODES.has(e.code)) return;
     e.preventDefault();
     switch (e.code) {
@@ -269,7 +265,7 @@ export class HaControlSlider extends LitElement {
 
   private _tooltipTimeout?: number;
 
-  _handleKeyUp(e: KeyboardEvent) {
+  private _handleKeyUp(e: KeyboardEvent) {
     if (!A11Y_KEY_CODES.has(e.code)) return;
     e.preventDefault();
     this._hideTooltip(500);
@@ -529,7 +525,7 @@ export class HaControlSlider extends LitElement {
           0,
           0
         );
-        border-radius: 0 var(--border-radius) var(--border-radius) 0;
+        border-radius: 0 8px 8px 0;
       }
       .slider .slider-track-bar:after {
         top: 0;
@@ -546,7 +542,7 @@ export class HaControlSlider extends LitElement {
           0,
           0
         );
-        border-radius: var(--border-radius) 0 0 var(--border-radius);
+        border-radius: 8px 0 0 8px;
       }
       .slider .slider-track-bar.end::after {
         right: initial;
@@ -561,7 +557,7 @@ export class HaControlSlider extends LitElement {
           calc((1 - var(--value, 0)) * var(--slider-size)),
           0
         );
-        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        border-radius: 8px 8px 0 0;
       }
       :host([vertical]) .slider .slider-track-bar:after {
         top: var(--handle-margin);
@@ -579,7 +575,7 @@ export class HaControlSlider extends LitElement {
           calc((0 - var(--value, 0)) * var(--slider-size)),
           0
         );
-        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        border-radius: 0 0 8px 8px;
       }
       :host([vertical]) .slider .slider-track-bar.end::after {
         top: initial;

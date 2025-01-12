@@ -1,10 +1,10 @@
-import { css, CSSResultGroup, html, LitElement } from "lit";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../common/dom/fire_event";
 import { stopPropagation } from "../common/dom/stop_propagation";
 import { caseInsensitiveStringCompare } from "../common/string/compare";
-import "../resources/intl-polyfill";
 import "./ha-list-item";
 import "./ha-select";
 import type { HaSelect } from "./ha-select";
@@ -170,12 +170,9 @@ const CURRENCIES = [
 ];
 
 const curSymbol = (currency: string, locale?: string) =>
-  Intl && "NumberFormat" in Intl
-    ? new Intl.NumberFormat(locale, { style: "currency", currency })
-        .formatToParts(1)
-        .find((x) => x.type === "currency")?.value
-    : currency;
-
+  new Intl.NumberFormat(locale, { style: "currency", currency })
+    .formatToParts(1)
+    .find((x) => x.type === "currency")?.value;
 @customElement("ha-currency-picker")
 export class HaCurrencyPicker extends LitElement {
   @property() public language = "en";
@@ -189,13 +186,10 @@ export class HaCurrencyPicker extends LitElement {
   @property({ type: Boolean, reflect: true }) public disabled = false;
 
   private _getOptions = memoizeOne((language?: string) => {
-    const currencyDisplayNames =
-      Intl && "DisplayNames" in Intl
-        ? new Intl.DisplayNames(language, {
-            type: "currency",
-            fallback: "code",
-          })
-        : undefined;
+    const currencyDisplayNames = new Intl.DisplayNames(language, {
+      type: "currency",
+      fallback: "code",
+    });
     const options = CURRENCIES.map((currency) => ({
       value: currency,
       label: `${

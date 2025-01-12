@@ -1,12 +1,6 @@
 import { mdiArrowBottomLeft, mdiArrowTopRight, mdiStop } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  TemplateResult,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
 import memoizeOne from "memoize-one";
@@ -19,8 +13,8 @@ import "../../components/ha-control-button";
 import "../../components/ha-control-button-group";
 import "../../components/ha-control-slider";
 import "../../components/ha-svg-icon";
+import type { CoverEntity } from "../../data/cover";
 import {
-  CoverEntity,
   CoverEntityFeature,
   canClose,
   canCloseTilt,
@@ -29,7 +23,7 @@ import {
   canStop,
   canStopTilt,
 } from "../../data/cover";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 
 type CoverButton =
   | "open"
@@ -254,7 +248,7 @@ export class HaStateControlCoverButtons extends LitElement {
         height: 45vh;
         max-height: 320px;
         min-height: 200px;
-        --control-button-group-spacing: 6px;
+        --control-button-group-spacing: 10px;
         --control-button-group-thickness: 100px;
       }
       .cross-container {
@@ -262,7 +256,7 @@ export class HaStateControlCoverButtons extends LitElement {
         max-height: 320px;
         min-height: 200px;
         display: grid;
-        grid-gap: 10px;
+        gap: 10px;
         grid-template-columns: repeat(3, min(100px, 25vw, 15vh));
         grid-template-rows: repeat(3, min(100px, 25vw, 15vh));
         grid-template-areas: ". open ." "close-tilt stop open-tilt" ". close .";
@@ -287,7 +281,7 @@ export class HaStateControlCoverButtons extends LitElement {
         grid-area: stop;
       }
       ha-control-button {
-        --control-button-border-radius: 18px;
+        --control-button-border-radius: 36px;
         --mdc-icon-size: 24px;
       }
     `;

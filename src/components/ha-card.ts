@@ -1,4 +1,5 @@
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 
 @customElement("ha-card")
@@ -14,6 +15,8 @@ export class HaCard extends LitElement {
           --ha-card-background,
           var(--card-background-color, white)
         );
+        -webkit-backdrop-filter: var(--ha-card-backdrop-filter, none);
+        backdrop-filter: var(--ha-card-backdrop-filter, none);
         box-shadow: var(--ha-card-box-shadow, none);
         box-sizing: border-box;
         border-radius: var(--ha-card-border-radius, 12px);
@@ -41,7 +44,7 @@ export class HaCard extends LitElement {
 
       .card-header,
       :host ::slotted(.card-header) {
-        color: var(--ha-card-header-color, --primary-text-color);
+        color: var(--ha-card-header-color, var(--primary-text-color));
         font-family: var(--ha-card-header-font-family, inherit);
         font-size: var(--ha-card-header-font-size, 24px);
         letter-spacing: -0.012em;

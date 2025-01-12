@@ -1,14 +1,15 @@
-import { HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity } from "home-assistant-js-websocket";
 import { css, html, LitElement, nothing } from "lit";
-import { customElement, property, query } from "lit/decorators";
+import { customElement, property, query, state } from "lit/decorators";
 import { computeDomain } from "../../common/entity/compute_domain";
-import { ChartResizeOptions } from "../../components/chart/ha-chart-base";
-import { ExtEntityRegistryEntry } from "../../data/entity_registry";
+import type { ChartResizeOptions } from "../../components/chart/ha-chart-base";
+import type { ExtEntityRegistryEntry } from "../../data/entity_registry";
 import type { HomeAssistant } from "../../types";
 import {
   computeShowHistoryComponent,
   computeShowLogBookComponent,
   computeShowNewMoreInfo,
+  DOMAINS_FULL_HEIGHT_MORE_INFO,
   DOMAINS_NO_INFO,
   DOMAINS_WITH_MORE_INFO,
 } from "./const";
@@ -16,6 +17,7 @@ import "./ha-more-info-history";
 import type { MoreInfoHistory } from "./ha-more-info-history";
 import "./ha-more-info-logbook";
 import "./more-info-content";
+import { getSensorNumericDeviceClasses } from "../../data/sensor";
 
 @customElement("ha-more-info-info")
 export class MoreInfoInfo extends LitElement {
@@ -27,8 +29,20 @@ export class MoreInfoInfo extends LitElement {
 
   @property({ attribute: false }) public editMode?: boolean;
 
+  @state() private _sensorNumericDeviceClasses?: string[] = [];
+
   @query("ha-more-info-history")
   private _history?: MoreInfoHistory;
+
+  private async _loadNumericDeviceClasses() {
+    const deviceClasses = await getSensorNumericDeviceClasses(this.hass);
+    this._sensorNumericDeviceClasses = deviceClasses.numeric_device_classes;
+  }
+
+  protected firstUpdated(changedProps) {
+    super.firstUpdated(changedProps);
+    this._loadNumericDeviceClasses();
+  }
 
   public resize(options?: ChartResizeOptions) {
     this._history?.resize(options);
@@ -40,6 +54,8 @@ export class MoreInfoInfo extends LitElement {
     const entityRegObj = this.hass.entities[entityId];
     const domain = computeDomain(entityId);
     const isNewMoreInfo = stateObj && computeShowNewMoreInfo(stateObj);
+    const isFullHeight =
+      isNewMoreInfo || DOMAINS_FULL_HEIGHT_MORE_INFO.includes(domain);
 
     return html`
       <div class="container" data-domain=${domain}>
@@ -69,7 +85,7 @@ export class MoreInfoInfo extends LitElement {
             ? ""
             : html`
                 <state-card-content
-                  inDialog
+                  in-dialog
                   .stateObj=${stateObj}
                   .hass=${this.hass}
                 ></state-card-content>
@@ -82,14 +98,18 @@ export class MoreInfoInfo extends LitElement {
                 .entityId=${this.entityId}
               ></ha-more-info-history>`}
           ${DOMAINS_WITH_MORE_INFO.includes(domain) ||
-          !computeShowLogBookComponent(this.hass, entityId)
+          !computeShowLogBookComponent(
+            this.hass,
+            entityId,
+            this._sensorNumericDeviceClasses
+          )
             ? ""
             : html`<ha-more-info-logbook
                 .hass=${this.hass}
                 .entityId=${this.entityId}
               ></ha-more-info-logbook>`}
           <more-info-content
-            ?full-height=${isNewMoreInfo}
+            ?full-height=${isFullHeight}
             .stateObj=${stateObj}
             .hass=${this.hass}
             .entry=${this.entry}

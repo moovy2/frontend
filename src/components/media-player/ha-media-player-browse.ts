@@ -5,15 +5,8 @@ import "@material/mwc-list/mwc-list";
 import "@material/mwc-list/mwc-list-item";
 import { mdiArrowUpRight, mdiPlay, mdiPlus } from "@mdi/js";
 import "@lrnwebcomponents/simple-tooltip/simple-tooltip";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import {
   customElement,
   eventOptions,
@@ -27,19 +20,20 @@ import { until } from "lit/directives/until";
 import { fireEvent } from "../../common/dom/fire_event";
 import { debounce } from "../../common/util/debounce";
 import { isUnavailableState } from "../../data/entity";
-import type { MediaPlayerItem } from "../../data/media-player";
-import {
-  browseMediaPlayer,
-  BROWSER_PLAYER,
-  MediaClassBrowserSettings,
+import type {
+  MediaPlayerItem,
   MediaPickedEvent,
   MediaPlayerBrowseAction,
   MediaPlayerLayoutType,
 } from "../../data/media-player";
+import {
+  browseMediaPlayer,
+  BROWSER_PLAYER,
+  MediaClassBrowserSettings,
+} from "../../data/media-player";
 import { browseLocalMediaPlayer } from "../../data/media_source";
 import { isTTSMediaSource } from "../../data/tts";
 import { showAlertDialog } from "../../dialogs/generic/show-dialog-box";
-import { loadPolyfillIfNeeded } from "../../resources/resize-observer.polyfill";
 import { haStyle } from "../../resources/styles";
 import type { HomeAssistant } from "../../types";
 import {
@@ -83,11 +77,12 @@ export interface MediaPlayerItemId {
 export class HaMediaPlayerBrowse extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public entityId!: string;
+  @property({ attribute: false }) public entityId!: string;
 
   @property() public action: MediaPlayerBrowseAction = "play";
 
-  @property() public preferredLayout: MediaPlayerLayoutType = "auto";
+  @property({ attribute: false })
+  public preferredLayout: MediaPlayerLayoutType = "auto";
 
   @property({ type: Boolean }) public dialog = false;
 
@@ -770,7 +765,6 @@ export class HaMediaPlayerBrowse extends LitElement {
 
   private async _attachResizeObserver(): Promise<void> {
     if (!this._resizeObserver) {
-      await loadPolyfillIfNeeded();
       this._resizeObserver = new ResizeObserver(
         debounce(() => this._measureCard(), 250, false)
       );

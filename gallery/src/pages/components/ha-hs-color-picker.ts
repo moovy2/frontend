@@ -1,6 +1,7 @@
 import "../../../../src/components/ha-hs-color-picker";
 
-import { css, html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators";
 
 import "../../../../src/components/ha-card";
@@ -75,7 +76,7 @@ export class DemoHaHsColorPicker extends LitElement {
             @change=${this._saturationChanged}
           >
           </ha-slider>
-          <p>Color Brighness : ${this.brightness}</p>
+          <p>Color Brightness : ${this.brightness}</p>
           <ha-slider
             labeled
             step="1"

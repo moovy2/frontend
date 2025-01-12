@@ -1,4 +1,5 @@
-import { css, html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement } from "lit/decorators";
 import "../../../../src/components/ha-card";
 import "../../../../src/components/ha-faded";
@@ -19,7 +20,7 @@ export class DemoHaFaded extends LitElement {
           <ha-faded><span>${LONG_TEXT}</span></ha-faded>
           <h3>No text</h3>
           <ha-faded><span></span></ha-faded>
-          <h3>Smal text</h3>
+          <h3>Small text</h3>
           <ha-faded><span>${SMALL_TEXT}</span></ha-faded>
           <h3>Long text in markdown</h3>
           <ha-faded>

@@ -1,5 +1,5 @@
-import { PropertyDeclaration, PropertyValues, ReactiveElement } from "lit";
-import { ClassElement } from "../../types";
+import type { PropertyDeclaration, PropertyValues, ReactiveElement } from "lit";
+import type { ClassElement } from "../../types";
 import { shallowEqual } from "../util/shallow-equal";
 
 /**
@@ -19,9 +19,9 @@ type ReactiveElementClassWithTransformers = typeof ReactiveElement & {
 };
 
 /**
- * Specifies an tranformer callback that is run when the value of the decorated property, or any of the properties in the watching array, changes.
- * The result of the tranformer is assigned to the decorated property.
- * The tranformer receives the current as arguments.
+ * Specifies a transformer callback that is run when the value of the decorated property, or any of the properties in the watching array, changes.
+ * The result of the transformer is assigned to the decorated property.
+ * The transformer receives the current as argument.
  */
 export const transform =
   <T, V>(config: {

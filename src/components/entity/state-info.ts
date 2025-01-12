@@ -1,6 +1,7 @@
 import "@lrnwebcomponents/simple-tooltip/simple-tooltip";
 import type { HassEntity } from "home-assistant-js-websocket";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { computeStateName } from "../../common/entity/compute_state_name";
 import type { HomeAssistant } from "../../types";
@@ -13,7 +14,7 @@ class StateInfo extends LitElement {
 
   @property({ attribute: false }) public stateObj?: HassEntity;
 
-  @property({ type: Boolean }) public inDialog = false;
+  @property({ attribute: "in-dialog", type: Boolean }) public inDialog = false;
 
   @property() public color?: string;
 
@@ -31,18 +32,17 @@ class StateInfo extends LitElement {
         .color=${this.color}
       ></state-badge>
       <div class="info">
-        <div class="name" .title=${name} .inDialog=${this.inDialog}>
+        <div class="name ${this.inDialog ? "in-dialog" : ""}" .title=${name}>
           ${name}
         </div>
         ${this.inDialog
           ? html`<div class="time-ago">
               <ha-relative-time
-                id="last_changed"
                 .hass=${this.hass}
                 .datetime=${this.stateObj.last_changed}
                 capitalize
               ></ha-relative-time>
-              <simple-tooltip animation-delay="0" for="last_changed">
+              <simple-tooltip animation-delay="0">
                 <div>
                   <div class="row">
                     <span class="column-name">
@@ -98,6 +98,7 @@ class StateInfo extends LitElement {
         height: 100%;
         min-width: 0;
         text-align: var(--float-start);
+        position: relative;
       }
 
       .name {
@@ -107,7 +108,7 @@ class StateInfo extends LitElement {
         text-overflow: ellipsis;
       }
 
-      .name[inDialog],
+      .name.in-dialog,
       :host([secondary-line]) .name {
         line-height: 20px;
       }

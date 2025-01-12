@@ -1,23 +1,14 @@
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  PropertyValues,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { getColorByIndex } from "../../../common/color/colors";
 import { applyThemesOnElement } from "../../../common/dom/apply_themes_on_element";
-import { HASSDomEvent } from "../../../common/dom/fire_event";
+import type { HASSDomEvent } from "../../../common/dom/fire_event";
 import { computeStateName } from "../../../common/entity/compute_state_name";
 import { debounce } from "../../../common/util/debounce";
 import "../../../components/ha-card";
-import {
-  Calendar,
-  CalendarEvent,
-  fetchCalendarEvents,
-} from "../../../data/calendar";
+import type { Calendar, CalendarEvent } from "../../../data/calendar";
+import { fetchCalendarEvents } from "../../../data/calendar";
 import type {
   CalendarViewChanged,
   FullCalendarView,
@@ -25,7 +16,6 @@ import type {
 } from "../../../types";
 import "../../calendar/ha-full-calendar";
 import { findEntities } from "../common/find-entities";
-import { loadPolyfillIfNeeded } from "../../../resources/resize-observer.polyfill";
 import "../components/hui-warning";
 import type { LovelaceCard, LovelaceCardEditor } from "../types";
 import type { CalendarCardConfig } from "./types";
@@ -210,7 +200,6 @@ export class HuiCalendarCard extends LitElement implements LovelaceCard {
 
   private async _attachObserver(): Promise<void> {
     if (!this._resizeObserver) {
-      await loadPolyfillIfNeeded();
       this._resizeObserver = new ResizeObserver(
         debounce(() => this._measureCard(), 250, false)
       );
@@ -233,7 +222,7 @@ export class HuiCalendarCard extends LitElement implements LovelaceCard {
       }
 
       .header {
-        color: var(--ha-card-header-color, --primary-text-color);
+        color: var(--ha-card-header-color, var(--primary-text-color));
         font-size: var(--ha-card-header-font-size, 24px);
         line-height: 1.2;
         padding-top: 16px;

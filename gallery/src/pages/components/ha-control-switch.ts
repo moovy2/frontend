@@ -4,7 +4,8 @@ import {
   mdiLightbulb,
   mdiLightbulbOff,
 } from "@mdi/js";
-import { css, html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
 import { repeat } from "lit/directives/repeat";
@@ -117,8 +118,8 @@ export class DemoHaControlSwitch extends LitElement {
       .custom {
         --control-switch-on-color: var(--green-color);
         --control-switch-off-color: var(--red-color);
-        --control-switch-thickness: 100px;
-        --control-switch-border-radius: 24px;
+        --control-switch-thickness: 130px;
+        --control-switch-border-radius: 36px;
         --control-switch-padding: 6px;
         --mdc-icon-size: 24px;
       }

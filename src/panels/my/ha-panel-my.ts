@@ -13,10 +13,10 @@ import {
 } from "../../common/url/search-params";
 import { domainToName } from "../../data/integration";
 import "../../layouts/hass-error-screen";
-import { HomeAssistant, Route } from "../../types";
+import type { HomeAssistant, Route } from "../../types";
 import { documentationUrl } from "../../util/documentation-url";
 
-export const getMyRedirects = (hasSupervisor: boolean): Redirects => ({
+export const getMyRedirects = (): Redirects => ({
   application_credentials: {
     redirect: "/config/application_credentials",
   },
@@ -27,10 +27,10 @@ export const getMyRedirects = (hasSupervisor: boolean): Redirects => ({
     redirect: "/developer-tools/state",
   },
   developer_services: {
-    redirect: "/developer-tools/service",
+    redirect: "/developer-tools/action",
   },
   developer_call_service: {
-    redirect: "/developer-tools/service",
+    redirect: "/developer-tools/action",
     params: {
       service: "string",
     },
@@ -115,6 +115,9 @@ export const getMyRedirects = (hasSupervisor: boolean): Redirects => ({
   },
   entities: {
     redirect: "/config/entities",
+  },
+  labels: {
+    redirect: "/config/labels",
   },
   energy: {
     component: "energy",
@@ -241,16 +244,24 @@ export const getMyRedirects = (hasSupervisor: boolean): Redirects => ({
     redirect: "/media-browser",
   },
   backup: {
-    component: hasSupervisor ? "hassio" : "backup",
-    redirect: hasSupervisor ? "/hassio/backups" : "/config/backup",
+    component: "backup",
+    redirect: "/config/backup",
+  },
+  backup_list: {
+    component: "backup",
+    redirect: "/config/backup/backups",
+  },
+  backup_config: {
+    component: "backup",
+    redirect: "/config/backup/settings",
   },
   supervisor_snapshots: {
-    component: hasSupervisor ? "hassio" : "backup",
-    redirect: hasSupervisor ? "/hassio/backups" : "/config/backup",
+    component: "backup",
+    redirect: "/config/backup",
   },
   supervisor_backups: {
-    component: hasSupervisor ? "hassio" : "backup",
-    redirect: hasSupervisor ? "/hassio/backups" : "/config/backup",
+    component: "backup",
+    redirect: "/config/backup",
   },
   supervisor_system: {
     // Moved from Supervisor panel in 2022.5
@@ -275,10 +286,8 @@ export const getMyRedirects = (hasSupervisor: boolean): Redirects => ({
   },
 });
 
-const getRedirect = (
-  path: string,
-  hasSupervisor: boolean
-): Redirect | undefined => getMyRedirects(hasSupervisor)?.[path];
+const getRedirect = (path: string): Redirect | undefined =>
+  getMyRedirects()?.[path];
 
 export type ParamType = "url" | "string" | "string?";
 
@@ -311,7 +320,7 @@ class HaPanelMy extends LitElement {
     const path = this.route.path.substring(1);
     const hasSupervisor = isComponentLoaded(this.hass, "hassio");
 
-    this._redirect = getRedirect(path, hasSupervisor);
+    this._redirect = getRedirect(path);
 
     if (path.startsWith("supervisor") && this._redirect === undefined) {
       if (!hasSupervisor) {
@@ -428,6 +437,9 @@ class HaPanelMy extends LitElement {
               >${this.hass.localize("ui.panel.my.download_app")}</a
             >`,
           });
+          break;
+        case "url_error":
+          error = this.hass.localize("ui.panel.my.url_error");
           break;
         default:
           error = this.hass.localize("ui.panel.my.error") || "Unknown error";

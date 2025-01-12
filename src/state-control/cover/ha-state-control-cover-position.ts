@@ -1,13 +1,14 @@
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { styleMap } from "lit/directives/style-map";
 import { computeAttributeNameDisplay } from "../../common/entity/compute_attribute_display";
 import { stateColorCss } from "../../common/entity/state_color";
 import "../../components/ha-control-slider";
-import { CoverEntity } from "../../data/cover";
+import type { CoverEntity } from "../../data/cover";
 import { UNAVAILABLE } from "../../data/entity";
 import { DOMAIN_ATTRIBUTES_UNITS } from "../../data/entity_attributes";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 
 @customElement("ha-state-control-cover-position")
 export class HaStateControlCoverPosition extends LitElement {
@@ -41,6 +42,7 @@ export class HaStateControlCoverPosition extends LitElement {
 
     return html`
       <ha-control-slider
+        touch-action="none"
         vertical
         .value=${this.value}
         min="0"
@@ -74,8 +76,8 @@ export class HaStateControlCoverPosition extends LitElement {
         height: 45vh;
         max-height: 320px;
         min-height: 200px;
-        --control-slider-thickness: 100px;
-        --control-slider-border-radius: 24px;
+        --control-slider-thickness: 130px;
+        --control-slider-border-radius: 36px;
         --control-slider-color: var(--primary-color);
         --control-slider-background: var(--disabled-color);
         --control-slider-background-opacity: 0.2;

@@ -1,12 +1,12 @@
-import { ChartOptions } from "chart.js";
-import { HassConfig } from "home-assistant-js-websocket";
+import type { ChartOptions } from "chart.js";
+import type { HassConfig } from "home-assistant-js-websocket";
 import {
   addHours,
   subHours,
   differenceInDays,
   differenceInHours,
-} from "date-fns/esm";
-import { FrontendLocaleData } from "../../../../../data/translation";
+} from "date-fns";
+import type { FrontendLocaleData } from "../../../../../data/translation";
 import {
   formatNumber,
   numberFormatToLocale,
@@ -33,6 +33,12 @@ export function getSuggestedMax(dayDifference: number, end: Date): number {
   return suggestedMax.getTime();
 }
 
+export function getSuggestedPeriod(
+  dayDifference: number
+): "month" | "day" | "hour" {
+  return dayDifference > 35 ? "month" : dayDifference > 2 ? "day" : "hour";
+}
+
 export function getCommonOptions(
   start: Date,
   end: Date,
@@ -57,7 +63,6 @@ export function getCommonOptions(
 
   const options: ChartOptions = {
     parsing: false,
-    animation: false,
     interaction: {
       mode: "x",
     },
@@ -92,8 +97,7 @@ export function getCommonOptions(
                   : dayDifference > 0
                     ? "datetime"
                     : "hour",
-          minUnit:
-            dayDifference > 35 ? "month" : dayDifference > 2 ? "day" : "hour",
+          minUnit: getSuggestedPeriod(dayDifference),
         },
       },
       y: {
