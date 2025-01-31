@@ -1,7 +1,6 @@
-import { HassConfig } from "home-assistant-js-websocket";
+import type { HassConfig } from "home-assistant-js-websocket";
 import memoizeOne from "memoize-one";
-import { FrontendLocaleData } from "../../data/translation";
-import "../../resources/intl-polyfill";
+import type { FrontendLocaleData } from "../../data/translation";
 import { formatDateNumeric } from "./format_date";
 import { formatTime } from "./format_time";
 import { resolveTimeZone } from "./resolve-time-zone";
@@ -65,6 +64,18 @@ const formatShortDateTimeMem = memoizeOne(
       timeZone: resolveTimeZone(locale.time_zone, serverTimeZone),
     })
 );
+
+export const formatShortDateTimeWithConditionalYear = (
+  dateObj: Date,
+  locale: FrontendLocaleData,
+  config: HassConfig
+) => {
+  const now = new Date();
+  if (now.getFullYear() === dateObj.getFullYear()) {
+    return formatShortDateTime(dateObj, locale, config);
+  }
+  return formatShortDateTimeWithYear(dateObj, locale, config);
+};
 
 // August 9, 2021, 8:23:15 AM
 export const formatDateTimeWithSeconds = (

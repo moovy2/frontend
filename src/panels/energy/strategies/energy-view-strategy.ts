@@ -1,13 +1,13 @@
 import { ReactiveElement } from "lit";
 import { customElement } from "lit/decorators";
-import {
+import type {
   EnergyPreferences,
-  getEnergyPreferences,
   GridSourceTypeEnergyPreference,
 } from "../../../data/energy";
-import { HomeAssistant } from "../../../types";
-import { LovelaceViewConfig } from "../../../data/lovelace/config/view";
-import { LovelaceStrategyConfig } from "../../../data/lovelace/config/strategy";
+import { getEnergyPreferences } from "../../../data/energy";
+import type { HomeAssistant } from "../../../types";
+import type { LovelaceViewConfig } from "../../../data/lovelace/config/view";
+import type { LovelaceStrategyConfig } from "../../../data/lovelace/config/strategy";
 
 const setupWizard = async (): Promise<LovelaceViewConfig> => {
   await import("../cards/energy-setup-wizard-card");
@@ -44,10 +44,20 @@ export class EnergyViewStrategy extends ReactiveElement {
       return view;
     }
 
+    // No energy sources available, start from scratch
+    if (
+      prefs!.device_consumption.length === 0 &&
+      prefs!.energy_sources.length === 0
+    ) {
+      return setupWizard();
+    }
+
     view.type = "sidebar";
 
     const hasGrid = prefs.energy_sources.find(
-      (source) => source.type === "grid"
+      (source) =>
+        source.type === "grid" &&
+        (source.flow_from?.length || source.flow_to?.length)
     ) as GridSourceTypeEnergyPreference;
     const hasReturn = hasGrid && hasGrid.flow_to.length;
     const hasSolar = prefs.energy_sources.some(
@@ -110,7 +120,7 @@ export class EnergyViewStrategy extends ReactiveElement {
       });
     }
 
-    if (hasGrid || hasSolar) {
+    if (hasGrid || hasSolar || hasGas || hasWater) {
       view.cards!.push({
         title: hass.localize(
           "ui.panel.energy.cards.energy_sources_table_title"

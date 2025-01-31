@@ -1,10 +1,12 @@
-import { LitElement, TemplateResult, html } from "lit";
+import type { TemplateResult } from "lit";
+import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { getAppKey } from "../data/notify_html5";
 import { showPromptDialog } from "../dialogs/generic/show-dialog-box";
-import { HaSwitch } from "./ha-switch";
-import { HomeAssistant } from "../types";
+import type { HaSwitch } from "./ha-switch";
+import type { HomeAssistant } from "../types";
 import { fireEvent } from "../common/dom/fire_event";
+import "./ha-switch";
 
 export const pushSupported =
   "serviceWorker" in navigator &&
@@ -22,7 +24,7 @@ class HaPushNotificationsToggle extends LitElement {
   @state() private _pushChecked: boolean =
     "Notification" in window && Notification.permission === "granted";
 
-  @state() private _loading: boolean = true;
+  @state() private _loading = true;
 
   protected render(): TemplateResult {
     return html`
@@ -48,7 +50,7 @@ class HaPushNotificationsToggle extends LitElement {
         this._loading = false;
         this._pushChecked = !!subscription;
       });
-    } catch (err) {
+    } catch (_err) {
       // We don't set loading to `false` so we remain disabled
     }
   }
@@ -94,7 +96,7 @@ class HaPushNotificationsToggle extends LitElement {
       let applicationServerKey: Uint8Array | null;
       try {
         applicationServerKey = await getAppKey(this.hass);
-      } catch (ex) {
+      } catch (_err) {
         applicationServerKey = null;
       }
 

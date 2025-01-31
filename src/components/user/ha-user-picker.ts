@@ -1,11 +1,13 @@
 import "@material/mwc-list/mwc-list-item";
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { property } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../../common/dom/fire_event";
 import { stringCompare } from "../../common/string/compare";
-import { fetchUsers, User } from "../../data/user";
-import { HomeAssistant } from "../../types";
+import type { User } from "../../data/user";
+import { fetchUsers } from "../../data/user";
+import type { HomeAssistant } from "../../types";
 import "../ha-select";
 import "./ha-user-badge";
 import "../ha-list-item";
@@ -15,7 +17,7 @@ class HaUserPicker extends LitElement {
 
   @property() public label?: string;
 
-  @property() public noUserLabel?: string;
+  @property({ attribute: false }) public noUserLabel?: string;
 
   @property() public value = "";
 
@@ -86,16 +88,14 @@ class HaUserPicker extends LitElement {
     }
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: inline-block;
-      }
-      mwc-list {
-        display: block;
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      display: inline-block;
+    }
+    mwc-list {
+      display: block;
+    }
+  `;
 }
 
 customElements.define("ha-user-picker", HaUserPicker);

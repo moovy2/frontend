@@ -1,10 +1,11 @@
-import { html, css, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { html, css, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import "../../../../src/components/ha-bar";
 import "../../../../src/components/ha-card";
 import "../../../../src/components/ha-circular-progress";
 import "@material/web/progress/circular-progress";
-import { HomeAssistant } from "../../../../src/types";
+import type { HomeAssistant } from "../../../../src/types";
 
 @customElement("demo-components-ha-circular-progress")
 export class DemoHaCircularProgress extends LitElement {
@@ -47,14 +48,12 @@ export class DemoHaCircularProgress extends LitElement {
       ></ha-card>`;
   }
 
-  static get styles() {
-    return css`
-      ha-card {
-        max-width: 600px;
-        margin: 24px auto;
-      }
-    `;
-  }
+  static styles = css`
+    ha-card {
+      max-width: 600px;
+      margin: 24px auto;
+    }
+  `;
 }
 
 declare global {

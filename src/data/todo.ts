@@ -1,4 +1,4 @@
-import { HomeAssistant, ServiceCallResponse } from "../types";
+import type { HomeAssistant, ServiceCallResponse } from "../types";
 import { computeDomain } from "../common/entity/compute_domain";
 import { computeStateName } from "../common/entity/compute_state_name";
 import { isUnavailableState } from "./entity";
@@ -12,6 +12,14 @@ export interface TodoList {
 export const enum TodoItemStatus {
   NeedsAction = "needs_action",
   Completed = "completed",
+}
+
+export enum TodoSortMode {
+  NONE = "none",
+  ALPHA_ASC = "alpha_asc",
+  ALPHA_DESC = "alpha_desc",
+  DUEDATE_ASC = "duedate_asc",
+  DUEDATE_DESC = "duedate_desc",
 }
 
 export interface TodoItem {

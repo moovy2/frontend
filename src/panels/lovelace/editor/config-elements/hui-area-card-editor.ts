@@ -23,7 +23,7 @@ import type { LovelaceCardEditor } from "../../types";
 import { baseLovelaceCardConfig } from "../structs/base-card-struct";
 import { computeDomain } from "../../../../common/entity/compute_domain";
 import { caseInsensitiveStringCompare } from "../../../../common/string/compare";
-import { SelectOption } from "../../../../data/selector";
+import type { SelectOption } from "../../../../data/selector";
 import { getSensorNumericDeviceClasses } from "../../../../data/sensor";
 
 const cardConfigStruct = assign(
@@ -130,7 +130,7 @@ export class HuiAreaCardEditor
         !e.entity_category &&
         !e.hidden &&
         (e.area_id === area ||
-          (e.device_id && this.hass!.devices[e.device_id].area_id === area))
+          (e.device_id && this.hass!.devices[e.device_id]?.area_id === area))
     );
 
     const classes = entities
