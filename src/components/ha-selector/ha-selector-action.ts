@@ -1,9 +1,11 @@
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
-import { Action } from "../../data/script";
-import { ActionSelector } from "../../data/selector";
+import memoizeOne from "memoize-one";
+import type { Action } from "../../data/script";
+import { migrateAutomationAction } from "../../data/script";
+import type { ActionSelector } from "../../data/selector";
 import "../../panels/config/automation/action/ha-automation-action";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 
 @customElement("ha-selector-action")
 export class HaActionSelector extends LitElement {
@@ -17,35 +19,35 @@ export class HaActionSelector extends LitElement {
 
   @property({ type: Boolean, reflect: true }) public disabled = false;
 
+  private _actions = memoizeOne((action: Action | undefined) => {
+    if (!action) {
+      return [];
+    }
+    return migrateAutomationAction(action);
+  });
+
   protected render() {
     return html`
       ${this.label ? html`<label>${this.label}</label>` : nothing}
       <ha-automation-action
         .disabled=${this.disabled}
-        .actions=${this.value || []}
+        .actions=${this._actions(this.value)}
         .hass=${this.hass}
-        .path=${this.selector.action?.path}
       ></ha-automation-action>
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-automation-action {
-        display: block;
-        margin-bottom: 16px;
-      }
-      :host([disabled]) ha-automation-action {
-        opacity: var(--light-disabled-opacity);
-        pointer-events: none;
-      }
-      label {
-        display: block;
-        margin-bottom: 4px;
-        font-weight: 500;
-      }
-    `;
-  }
+  static styles = css`
+    ha-automation-action {
+      display: block;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+  `;
 }
 
 declare global {

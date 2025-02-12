@@ -1,20 +1,19 @@
 import { ReactiveElement } from "lit";
 import { customElement } from "lit/decorators";
 import { computeStateDomain } from "../../../../common/entity/compute_state_domain";
-import { LovelaceViewConfig } from "../../../../data/lovelace/config/view";
-import { HomeAssistant } from "../../../../types";
-import { MapCardConfig } from "../../cards/types";
+import type { LovelaceViewConfig } from "../../../../data/lovelace/config/view";
+import type { HomeAssistant } from "../../../../types";
+import type { MapCardConfig } from "../../cards/types";
 
-export type MapViewStrategyConfig = {
+export interface MapViewStrategyConfig {
   type: "map";
-};
+}
 
 const getMapEntities = (hass: HomeAssistant) => {
   const personSources = new Set<string>();
   const locationEntities: string[] = [];
   Object.values(hass.states).forEach((entity) => {
     if (
-      entity.state === "home" ||
       !("latitude" in entity.attributes) ||
       !("longitude" in entity.attributes)
     ) {

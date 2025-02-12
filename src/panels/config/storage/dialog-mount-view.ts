@@ -1,9 +1,10 @@
-import { mdiHelpCircle } from "@mdi/js";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { mdiClose, mdiHelpCircle } from "@mdi/js";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../../../common/dom/fire_event";
-import { LocalizeFunc } from "../../../common/translations/localize";
+import type { LocalizeFunc } from "../../../common/translations/localize";
 import { computeRTLDirection } from "../../../common/util/compute_rtl";
 import "../../../components/buttons/ha-progress-button";
 import type { HaProgressButton } from "../../../components/buttons/ha-progress-button";
@@ -11,18 +12,18 @@ import "../../../components/ha-form/ha-form";
 import type { SchemaUnion } from "../../../components/ha-form/types";
 import "../../../components/ha-icon-button";
 import { extractApiErrorMessage } from "../../../data/hassio/common";
+import type { SupervisorMountRequestParams } from "../../../data/supervisor/mounts";
 import {
   createSupervisorMount,
   removeSupervisorMount,
-  SupervisorMountRequestParams,
   SupervisorMountType,
   SupervisorMountUsage,
   updateSupervisorMount,
 } from "../../../data/supervisor/mounts";
 import { haStyle, haStyleDialog } from "../../../resources/styles";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 import { documentationUrl } from "../../../util/documentation-url";
-import { MountViewDialogParams } from "./show-dialog-view-mount";
+import type { MountViewDialogParams } from "./show-dialog-view-mount";
 
 const mountSchema = memoizeOne(
   (
@@ -214,6 +215,12 @@ class ViewMountDialog extends LitElement {
         @closed=${this.closeDialog}
       >
         <ha-dialog-header slot="heading">
+          <ha-icon-button
+            slot="navigationIcon"
+            dialogAction="cancel"
+            .label=${this.hass.localize("ui.common.close")}
+            .path=${mdiClose}
+          ></ha-icon-button>
           <span slot="title"
             >${this._existing
               ? this.hass.localize(
@@ -260,30 +267,34 @@ class ViewMountDialog extends LitElement {
           @value-changed=${this._valueChanged}
           dialogInitialFocus
         ></ha-form>
-        <div slot="secondaryAction">
-          <mwc-button @click=${this.closeDialog} dialogInitialFocus>
-            ${this.hass.localize("ui.common.cancel")}
-          </mwc-button>
-          ${this._existing
-            ? html`<mwc-button @click=${this._deleteMount} class="delete-btn">
-                ${this.hass.localize("ui.common.delete")}
-              </mwc-button>`
-            : nothing}
-        </div>
 
-        <ha-progress-button
-          .progress=${this._waiting}
-          slot="primaryAction"
-          @click=${this._connectMount}
-        >
-          ${this._existing
-            ? this.hass.localize(
-                "ui.panel.config.storage.network_mounts.update"
-              )
-            : this.hass.localize(
-                "ui.panel.config.storage.network_mounts.connect"
-              )}
-        </ha-progress-button>
+        ${this._existing
+          ? html`<ha-button
+              @click=${this._deleteMount}
+              destructive
+              slot="secondaryAction"
+            >
+              ${this.hass.localize("ui.common.delete")}
+            </ha-button>`
+          : nothing}
+
+        <div slot="primaryAction">
+          <ha-button @click=${this.closeDialog} dialogInitialFocus>
+            ${this.hass.localize("ui.common.cancel")}
+          </ha-button>
+          <ha-progress-button
+            .progress=${this._waiting}
+            @click=${this._connectMount}
+          >
+            ${this._existing
+              ? this.hass.localize(
+                  "ui.panel.config.storage.network_mounts.update"
+                )
+              : this.hass.localize(
+                  "ui.panel.config.storage.network_mounts.connect"
+                )}
+          </ha-progress-button>
+        </div>
       </ha-dialog>
     `;
   }
@@ -387,9 +398,6 @@ class ViewMountDialog extends LitElement {
       css`
         ha-icon-button {
           color: var(--primary-text-color);
-        }
-        .delete-btn {
-          --mdc-theme-primary: var(--error-color);
         }
       `,
     ];

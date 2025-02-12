@@ -1,20 +1,14 @@
 import { mdiFlash, mdiFlashOff } from "@mdi/js";
-import { HassEntity } from "home-assistant-js-websocket";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-  css,
-  html,
-} from "lit";
+import type { HassEntity } from "home-assistant-js-websocket";
+import type { PropertyValues, TemplateResult } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { STATES_OFF } from "../../common/const";
 import { computeStateDomain } from "../../common/entity/compute_state_domain";
 import { computeStateName } from "../../common/entity/compute_state_name";
 import { UNAVAILABLE, UNKNOWN, isUnavailableState } from "../../data/entity";
 import { forwardHaptic } from "../../data/haptics";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 import "../ha-formfield";
 import "../ha-icon-button";
 import "../ha-switch";
@@ -158,25 +152,23 @@ export class HaEntityToggle extends LitElement {
     }, 2000);
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        white-space: nowrap;
-        min-width: 38px;
-      }
-      ha-icon-button {
-        --mdc-icon-button-size: 40px;
-        color: var(--ha-icon-button-inactive-color, var(--primary-text-color));
-        transition: color 0.5s;
-      }
-      ha-icon-button.state-active {
-        color: var(--ha-icon-button-active-color, var(--primary-color));
-      }
-      ha-switch {
-        padding: 13px 5px;
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      white-space: nowrap;
+      min-width: 38px;
+    }
+    ha-icon-button {
+      --mdc-icon-button-size: 40px;
+      color: var(--ha-icon-button-inactive-color, var(--primary-text-color));
+      transition: color 0.5s;
+    }
+    ha-icon-button.state-active {
+      color: var(--ha-icon-button-active-color, var(--primary-color));
+    }
+    ha-switch {
+      padding: 13px 5px;
+    }
+  `;
 }
 
 declare global {

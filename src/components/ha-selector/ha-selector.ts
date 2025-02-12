@@ -1,11 +1,12 @@
-import { html, LitElement, PropertyValues } from "lit";
+import type { PropertyValues } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { dynamicElement } from "../../common/dom/dynamic-element-directive";
+import type { Selector } from "../../data/selector";
 import {
   handleLegacyDeviceSelector,
   handleLegacyEntitySelector,
-  Selector,
 } from "../../data/selector";
 import type { HomeAssistant } from "../../types";
 
@@ -30,6 +31,10 @@ const LOAD_ELEMENTS = {
   entity: () => import("./ha-selector-entity"),
   statistic: () => import("./ha-selector-statistic"),
   file: () => import("./ha-selector-file"),
+  floor: () => import("./ha-selector-floor"),
+  label: () => import("./ha-selector-label"),
+  image: () => import("./ha-selector-image"),
+  background: () => import("./ha-selector-background"),
   language: () => import("./ha-selector-language"),
   navigation: () => import("./ha-selector-navigation"),
   number: () => import("./ha-selector-number"),
@@ -47,6 +52,7 @@ const LOAD_ELEMENTS = {
   icon: () => import("./ha-selector-icon"),
   media: () => import("./ha-selector-media"),
   theme: () => import("./ha-selector-theme"),
+  button_toggle: () => import("./ha-selector-button-toggle"),
   trigger: () => import("./ha-selector-trigger"),
   tts: () => import("./ha-selector-tts"),
   tts_voice: () => import("./ha-selector-tts-voice"),
@@ -54,6 +60,7 @@ const LOAD_ELEMENTS = {
   color_temp: () => import("./ha-selector-color-temp"),
   ui_action: () => import("./ha-selector-ui-action"),
   ui_color: () => import("./ha-selector-ui-color"),
+  ui_state_content: () => import("./ha-selector-ui-state-content"),
 };
 
 const LEGACY_UI_SELECTORS = new Set(["ui-action", "ui-color"]);

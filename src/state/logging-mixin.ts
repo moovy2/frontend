@@ -1,7 +1,7 @@
-import { HASSDomEvent } from "../common/dom/fire_event";
-import { SystemLogLevel } from "../data/system_log";
-import { Constructor } from "../types";
-import { HassBaseEl } from "./hass-base-mixin";
+import type { HASSDomEvent } from "../common/dom/fire_event";
+import type { SystemLogLevel } from "../data/system_log";
+import type { Constructor } from "../types";
+import type { HassBaseEl } from "./hass-base-mixin";
 
 interface WriteLogParams {
   level?: SystemLogLevel;
@@ -29,11 +29,11 @@ export const loggingMixin = <T extends Constructor<HassBaseEl>>(
           return;
         }
         if (
-          !__DEV__ &&
-          (ev.message.includes("ResizeObserver loop limit exceeded") ||
-            ev.message.includes(
-              "ResizeObserver loop completed with undelivered notifications"
-            ))
+          (!__DEV__ &&
+            ev.message.includes("ResizeObserver loop limit exceeded")) ||
+          ev.message.includes(
+            "ResizeObserver loop completed with undelivered notifications"
+          )
         ) {
           ev.preventDefault();
           ev.stopImmediatePropagation();

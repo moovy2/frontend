@@ -3,13 +3,12 @@ import "../../src/resources/compatibility";
 import { customElement } from "lit/decorators";
 import { isNavigationClick } from "../../src/common/dom/is-navigation-click";
 import { navigate } from "../../src/common/navigate";
-import {
-  MockHomeAssistant,
-  provideHass,
-} from "../../src/fake_data/provide_hass";
+import type { MockHomeAssistant } from "../../src/fake_data/provide_hass";
+import { provideHass } from "../../src/fake_data/provide_hass";
 import { HomeAssistantAppEl } from "../../src/layouts/home-assistant";
-import { HomeAssistant } from "../../src/types";
+import type { HomeAssistant } from "../../src/types";
 import { selectedDemoConfig } from "./configs/demo-configs";
+import { mockAreaRegistry } from "./stubs/area_registry";
 import { mockAuth } from "./stubs/auth";
 import { mockConfigEntries } from "./stubs/config_entries";
 import { mockEnergy } from "./stubs/energy";
@@ -23,10 +22,10 @@ import { mockLovelace } from "./stubs/lovelace";
 import { mockMediaPlayer } from "./stubs/media_player";
 import { mockPersistentNotification } from "./stubs/persistent_notification";
 import { mockRecorder } from "./stubs/recorder";
-import { mockTodo } from "./stubs/todo";
 import { mockSensor } from "./stubs/sensor";
 import { mockSystemLog } from "./stubs/system_log";
 import { mockTemplate } from "./stubs/template";
+import { mockTodo } from "./stubs/todo";
 import { mockTranslations } from "./stubs/translations";
 
 @customElement("ha-demo")
@@ -62,9 +61,11 @@ export class HaDemo extends HomeAssistantAppEl {
     mockEnergy(hass);
     mockPersistentNotification(hass);
     mockConfigEntries(hass);
+    mockAreaRegistry(hass);
     mockEntityRegistry(hass, [
       {
         config_entry_id: "co2signal",
+        config_subentry_id: null,
         device_id: "co2signal",
         area_id: null,
         disabled_by: null,
@@ -72,15 +73,20 @@ export class HaDemo extends HomeAssistantAppEl {
         id: "sensor.co2_intensity",
         name: null,
         icon: null,
+        labels: [],
+        categories: {},
         platform: "co2signal",
         hidden_by: null,
         entity_category: null,
         has_entity_name: false,
         unique_id: "co2_intensity",
         options: null,
+        created_at: 0,
+        modified_at: 0,
       },
       {
         config_entry_id: "co2signal",
+        config_subentry_id: null,
         device_id: "co2signal",
         area_id: null,
         disabled_by: null,
@@ -88,12 +94,16 @@ export class HaDemo extends HomeAssistantAppEl {
         id: "sensor.co2_intensity",
         name: null,
         icon: null,
+        labels: [],
+        categories: {},
         platform: "co2signal",
         hidden_by: null,
         entity_category: null,
         has_entity_name: false,
         unique_id: "grid_fossil_fuel_percentage",
         options: null,
+        created_at: 0,
+        modified_at: 0,
       },
     ]);
 
