@@ -1,43 +1,33 @@
-import {
-  ChartData,
-  ChartDataset,
-  ChartOptions,
-  ParsedDataType,
-  ScatterDataPoint,
-} from "chart.js";
-import { getRelativePosition } from "chart.js/helpers";
-import { UnsubscribeFunc } from "home-assistant-js-websocket";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  nothing,
-  PropertyValues,
-} from "lit";
-import { customElement, property, query, state } from "lit/decorators";
+import type { UnsubscribeFunc } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { css, html, LitElement, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import memoizeOne from "memoize-one";
+import type { BarSeriesOption } from "echarts/charts";
+import type { ECElementEvent } from "echarts/types/dist/shared";
 import { getGraphColorByIndex } from "../../../../common/color/colors";
-import { fireEvent } from "../../../../common/dom/fire_event";
 import {
   formatNumber,
-  numberFormatToLocale,
+  getNumberFormatOptions,
 } from "../../../../common/number/format_number";
 import "../../../../components/chart/ha-chart-base";
-import type { HaChartBase } from "../../../../components/chart/ha-chart-base";
-import "../../../../components/ha-card";
-import { EnergyData, getEnergyDataCollection } from "../../../../data/energy";
+import type { EnergyData } from "../../../../data/energy";
+import { getEnergyDataCollection } from "../../../../data/energy";
 import {
   calculateStatisticSumGrowth,
   getStatisticLabel,
+  isExternalStatistic,
 } from "../../../../data/recorder";
-import { FrontendLocaleData } from "../../../../data/translation";
 import { SubscribeMixin } from "../../../../mixins/subscribe-mixin";
-import { HomeAssistant } from "../../../../types";
-import { LovelaceCard } from "../../types";
-import { EnergyDevicesGraphCardConfig } from "../types";
+import type { HomeAssistant } from "../../../../types";
+import type { LovelaceCard } from "../../types";
+import type { EnergyDevicesGraphCardConfig } from "../types";
 import { hasConfigChanged } from "../../common/has-changed";
+import type { ECOption } from "../../../../resources/echarts";
+import "../../../../components/ha-card";
+import { fireEvent } from "../../../../common/dom/fire_event";
+import { measureTextWidth } from "../../../../util/text";
 
 @customElement("hui-energy-devices-graph-card")
 export class HuiEnergyDevicesGraphCard
@@ -48,11 +38,9 @@ export class HuiEnergyDevicesGraphCard
 
   @state() private _config?: EnergyDevicesGraphCardConfig;
 
-  @state() private _chartData: ChartData = { datasets: [] };
+  @state() private _chartData: BarSeriesOption[] = [];
 
   @state() private _data?: EnergyData;
-
-  @query("ha-chart-base") private _chart?: HaChartBase;
 
   protected hassSubscribeRequiredHostProps = ["_config"];
 
@@ -101,135 +89,138 @@ export class HuiEnergyDevicesGraphCard
           <ha-chart-base
             .hass=${this.hass}
             .data=${this._chartData}
-            .options=${this._createOptions(this.hass.locale)}
-            .height=${(this._chartData?.datasets[0]?.data.length || 0) * 28 +
-            50}
-            chart-type="bar"
+            .options=${this._createOptions(this._chartData)}
+            .height=${`${(this._chartData[0]?.data?.length || 0) * 28 + 50}px`}
+            @chart-click=${this._handleChartClick}
           ></ha-chart-base>
         </div>
       </ha-card>
     `;
   }
 
-  private _createOptions = memoizeOne(
-    (locale: FrontendLocaleData): ChartOptions => ({
-      parsing: false,
-      animation: false,
-      responsive: true,
-      maintainAspectRatio: false,
-      indexAxis: "y",
-      scales: {
-        y: {
-          type: "category",
-          ticks: {
-            autoSkip: false,
-            callback: (index) => {
-              const statisticId = (
-                this._chartData.datasets[0].data[index] as ScatterDataPoint
-              ).y;
-              return getStatisticLabel(
-                this.hass,
-                statisticId as any,
-                this._data?.statsMetadata[statisticId]
-              );
-            },
-          },
-        },
-        x: {
-          title: {
-            display: true,
-            text: "kWh",
-          },
-        },
-      },
-      elements: { bar: { borderWidth: 1, borderRadius: 4 } },
-      plugins: {
-        tooltip: {
-          mode: "nearest",
-          callbacks: {
-            title: (item) => {
-              const statisticId = item[0].label;
-              return getStatisticLabel(
-                this.hass,
-                statisticId,
-                this._data?.statsMetadata[statisticId]
-              );
-            },
-            label: (context) =>
-              `${context.dataset.label}: ${formatNumber(
-                context.parsed.x,
-                locale
-              )} kWh`,
-          },
-        },
-      },
-      // @ts-expect-error
-      locale: numberFormatToLocale(this.hass.locale),
-      onClick: (e: any) => {
-        const chart = e.chart;
-        const canvasPosition = getRelativePosition(e, chart);
+  private _renderTooltip(params: any) {
+    const title = `<h4 style="text-align: center; margin: 0;">${this._getDeviceName(
+      params.value[1]
+    )}</h4>`;
+    const value = `${formatNumber(
+      params.value[0] as number,
+      this.hass.locale,
+      getNumberFormatOptions(undefined, this.hass.entities[params.value[1]])
+    )} kWh`;
+    return `${title}${params.marker} ${params.seriesName}: ${value}`;
+  }
 
-        const index = Math.abs(
-          chart.scales.y.getValueForPixel(canvasPosition.y)
-        );
-        fireEvent(this, "hass-more-info", {
-          // @ts-ignore
-          entityId: this._chartData?.datasets[0]?.data[index]?.y,
-        });
-        chart.canvas.dispatchEvent(new Event("mouseout")); // to hide tooltip
+  private _createOptions = memoizeOne((data: BarSeriesOption[]): ECOption => {
+    const isMobile = window.matchMedia(
+      "all and (max-width: 450px), all and (max-height: 500px)"
+    ).matches;
+    return {
+      xAxis: {
+        type: "value",
+        name: "kWh",
       },
-    })
-  );
+      yAxis: {
+        type: "category",
+        inverse: true,
+        triggerEvent: true,
+        // take order from data
+        data: data[0]?.data?.map((d: any) => d.value[1]),
+        axisLabel: {
+          formatter: this._getDeviceName.bind(this),
+          overflow: "truncate",
+          fontSize: 12,
+          margin: 5,
+          width: Math.min(
+            isMobile ? 100 : 200,
+            Math.max(
+              ...(data[0]?.data?.map(
+                (d: any) =>
+                  measureTextWidth(this._getDeviceName(d.value[1]), 12) + 5
+              ) || [])
+            )
+          ),
+        },
+      },
+      grid: {
+        top: 5,
+        left: 5,
+        right: 40,
+        bottom: 0,
+        containLabel: true,
+      },
+      tooltip: {
+        show: true,
+        formatter: this._renderTooltip.bind(this),
+      },
+    };
+  });
+
+  private _getDeviceName(statisticId: string): string {
+    return (
+      this._data?.prefs.device_consumption.find(
+        (d) => d.stat_consumption === statisticId
+      )?.name ||
+      getStatisticLabel(
+        this.hass,
+        statisticId,
+        this._data?.statsMetadata[statisticId]
+      )
+    );
+  }
 
   private async _getStatistics(energyData: EnergyData): Promise<void> {
     const data = energyData.stats;
     const compareData = energyData.statsCompare;
 
-    const chartData: Array<ChartDataset<"bar", ParsedDataType<"bar">>["data"]> =
-      [];
-    const chartDataCompare: Array<
-      ChartDataset<"bar", ParsedDataType<"bar">>["data"]
-    > = [];
-    const borderColor: string[] = [];
-    const borderColorCompare: string[] = [];
-    const backgroundColor: string[] = [];
-    const backgroundColorCompare: string[] = [];
+    const chartData: NonNullable<BarSeriesOption["data"]> = [];
+    const chartDataCompare: NonNullable<BarSeriesOption["data"]> = [];
 
-    const datasets: ChartDataset<"bar", ParsedDataType<"bar">[]>[] = [
+    const datasets: BarSeriesOption[] = [
       {
-        label: this.hass.localize(
+        type: "bar",
+        name: this.hass.localize(
           "ui.panel.lovelace.cards.energy.energy_devices_graph.energy_usage"
         ),
-        borderColor,
-        backgroundColor,
+        itemStyle: {
+          borderRadius: [0, 4, 4, 0],
+        },
         data: chartData,
-        barThickness: compareData ? 10 : 20,
+        barWidth: compareData ? 10 : 20,
+        cursor: "default",
       },
     ];
 
     if (compareData) {
       datasets.push({
-        label: this.hass.localize(
+        type: "bar",
+        name: this.hass.localize(
           "ui.panel.lovelace.cards.energy.energy_devices_graph.previous_energy_usage"
         ),
-        borderColor: borderColorCompare,
-        backgroundColor: backgroundColorCompare,
+        itemStyle: {
+          borderRadius: [0, 4, 4, 0],
+        },
         data: chartDataCompare,
-        barThickness: 10,
+        barWidth: 10,
+        cursor: "default",
       });
     }
 
-    energyData.prefs.device_consumption.forEach((device, idx) => {
+    const computedStyle = getComputedStyle(this);
+
+    energyData.prefs.device_consumption.forEach((device, id) => {
       const value =
         device.stat_consumption in data
           ? calculateStatisticSumGrowth(data[device.stat_consumption]) || 0
           : 0;
+      const color = getGraphColorByIndex(id, computedStyle);
 
       chartData.push({
-        // @ts-expect-error
-        y: device.stat_consumption,
-        x: value,
-        idx,
+        id,
+        value: [value, device.stat_consumption],
+        itemStyle: {
+          color: color + "7F",
+          borderColor: color,
+        },
       });
 
       if (compareData) {
@@ -241,58 +232,50 @@ export class HuiEnergyDevicesGraphCard
             : 0;
 
         chartDataCompare.push({
-          // @ts-expect-error
-          y: device.stat_consumption,
-          x: compareValue,
-          idx,
+          id,
+          value: [compareValue, device.stat_consumption],
+          itemStyle: {
+            color: color + "32",
+            borderColor: color + "7F",
+          },
         });
       }
     });
 
-    chartData.sort((a, b) => b.x - a.x);
+    chartData.sort((a: any, b: any) => b.value[0] - a.value[0]);
 
     chartData.length = this._config?.max_devices || chartData.length;
 
-    const computedStyle = getComputedStyle(this);
-
-    chartData.forEach((d: any) => {
-      const color = getGraphColorByIndex(d.idx, computedStyle);
-
-      borderColor.push(color);
-      backgroundColor.push(color + "7F");
-    });
-
-    chartDataCompare.forEach((d: any) => {
-      const color = getGraphColorByIndex(d.idx, computedStyle);
-
-      borderColorCompare.push(color + "7F");
-      backgroundColorCompare.push(color + "32");
-    });
-
-    this._chartData = {
-      labels: chartData.map((d) => d.y),
-      datasets,
-    };
+    this._chartData = datasets;
     await this.updateComplete;
-    this._chart?.updateChart("none");
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      .card-header {
-        padding-bottom: 0;
-      }
-      .content {
-        padding: 16px;
-      }
-      .has-header {
-        padding-top: 0;
-      }
-      ha-chart-base {
-        --chart-max-height: none;
-      }
-    `;
+  private _handleChartClick(e: CustomEvent<ECElementEvent>): void {
+    if (
+      e.detail.targetType === "axisLabel" &&
+      e.detail.value &&
+      !isExternalStatistic(e.detail.value as string)
+    ) {
+      fireEvent(this, "hass-more-info", {
+        entityId: e.detail.value as string,
+      });
+    }
   }
+
+  static styles = css`
+    .card-header {
+      padding-bottom: 0;
+    }
+    .content {
+      padding: 16px;
+    }
+    .has-header {
+      padding-top: 0;
+    }
+    ha-chart-base {
+      --chart-max-height: none;
+    }
+  `;
 }
 
 declare global {

@@ -1,14 +1,11 @@
 import { atLeastVersion } from "../../common/config/version";
 import type { HaFormSchema } from "../../components/ha-form/types";
-import { HomeAssistant, TranslationDict } from "../../types";
+import type { HomeAssistant, TranslationDict } from "../../types";
 import { supervisorApiCall } from "../supervisor/common";
-import { StoreAddonDetails } from "../supervisor/store";
-import { Supervisor, SupervisorArch } from "../supervisor/supervisor";
-import {
-  extractApiErrorMessage,
-  hassioApiResultExtractor,
-  HassioResponse,
-} from "./common";
+import type { StoreAddonDetails } from "../supervisor/store";
+import type { Supervisor, SupervisorArch } from "../supervisor/supervisor";
+import type { HassioResponse } from "./common";
+import { extractApiErrorMessage, hassioApiResultExtractor } from "./common";
 
 export type AddonCapability = Exclude<
   keyof TranslationDict["supervisor"]["addon"]["dashboard"]["capability"],
@@ -319,6 +316,15 @@ export const updateHassioAddon = async (
   slug: string,
   backup: boolean
 ): Promise<void> => {
+  if (atLeastVersion(hass.config.version, 2025, 2, 0)) {
+    await hass.callWS({
+      type: "hassio/update/addon",
+      addon: slug,
+      backup: backup,
+    });
+    return;
+  }
+
   if (atLeastVersion(hass.config.version, 2021, 2, 4)) {
     await hass.callWS({
       type: "supervisor/api",
@@ -327,13 +333,14 @@ export const updateHassioAddon = async (
       timeout: null,
       data: { backup },
     });
-  } else {
-    await hass.callApi<HassioResponse<void>>(
-      "POST",
-      `hassio/addons/${slug}/update`,
-      { backup }
-    );
+    return;
   }
+
+  await hass.callApi<HassioResponse<void>>(
+    "POST",
+    `hassio/addons/${slug}/update`,
+    { backup }
+  );
 };
 
 export const restartHassioAddon = async (
@@ -358,21 +365,24 @@ export const restartHassioAddon = async (
 
 export const uninstallHassioAddon = async (
   hass: HomeAssistant,
-  slug: string
-) => {
+  slug: string,
+  removeData: boolean
+): Promise<void> => {
   if (atLeastVersion(hass.config.version, 2021, 2, 4)) {
     await hass.callWS({
       type: "supervisor/api",
       endpoint: `/addons/${slug}/uninstall`,
       method: "post",
       timeout: null,
+      data: { remove_config: removeData },
     });
     return;
   }
 
   await hass.callApi<HassioResponse<void>>(
     "POST",
-    `hassio/addons/${slug}/uninstall`
+    `hassio/addons/${slug}/uninstall`,
+    { remove_config: removeData }
   );
 };
 
@@ -393,7 +403,7 @@ export const rebuildLocalAddon = async (
   slug: string
 ): Promise<void> => {
   if (atLeastVersion(hass.config.version, 2021, 2, 4)) {
-    return hass.callWS<void>({
+    return hass.callWS<undefined>({
       type: "supervisor/api",
       endpoint: `/addons/${slug}/rebuild`,
       method: "post",

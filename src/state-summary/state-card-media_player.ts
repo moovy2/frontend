@@ -1,10 +1,10 @@
 import type { HassEntity } from "home-assistant-js-websocket";
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
-import { computeStateDisplay } from "../common/entity/compute_state_display";
 import "../components/entity/state-info";
 import HassMediaPlayerEntity from "../util/hass-media-player-model";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 import { haStyle } from "../resources/styles";
 
 @customElement("state-card-media_player")
@@ -13,7 +13,7 @@ class StateCardMediaPlayer extends LitElement {
 
   @property({ attribute: false }) public stateObj!: HassEntity;
 
-  @property({ type: Boolean }) public inDialog = false;
+  @property({ attribute: "in-dialog", type: Boolean }) public inDialog = false;
 
   protected render(): TemplateResult {
     const playerObj = new HassMediaPlayerEntity(this.hass, this.stateObj);
@@ -26,7 +26,7 @@ class StateCardMediaPlayer extends LitElement {
         ></state-info>
         <div class="state">
           <div class="main-text" take-height=${!playerObj.secondaryTitle}>
-            ${this._computePrimaryText(this.hass.localize, playerObj)}
+            ${this._computePrimaryText(playerObj)}
           </div>
           <div class="secondary-text">${playerObj.secondaryTitle}</div>
         </div>
@@ -34,16 +34,9 @@ class StateCardMediaPlayer extends LitElement {
     `;
   }
 
-  private _computePrimaryText(localize, playerObj) {
+  private _computePrimaryText(playerObj) {
     return (
-      playerObj.primaryTitle ||
-      computeStateDisplay(
-        localize,
-        playerObj.stateObj,
-        this.hass.locale,
-        this.hass.config,
-        this.hass.entities
-      )
+      playerObj.primaryTitle || this.hass.formatEntityState(playerObj.stateObj)
     );
   }
 

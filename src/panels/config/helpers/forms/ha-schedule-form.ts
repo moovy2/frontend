@@ -1,16 +1,12 @@
-import { Calendar, CalendarOptions } from "@fullcalendar/core";
+import type { CalendarOptions } from "@fullcalendar/core";
+import { Calendar } from "@fullcalendar/core";
 import allLocales from "@fullcalendar/core/locales-all";
 import interactionPlugin from "@fullcalendar/interaction";
 import timeGridPlugin from "@fullcalendar/timegrid";
+import type { Day } from "date-fns";
 import { addDays, isSameDay, isSameWeek, nextDay } from "date-fns";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { firstWeekdayIndex } from "../../../../common/datetime/first_weekday";
 import { formatTime24h } from "../../../../common/datetime/format_time";
@@ -18,11 +14,12 @@ import { useAmPm } from "../../../../common/datetime/use_am_pm";
 import { fireEvent } from "../../../../common/dom/fire_event";
 import "../../../../components/ha-icon-picker";
 import "../../../../components/ha-textfield";
-import { Schedule, ScheduleDay, weekdays } from "../../../../data/schedule";
+import type { Schedule, ScheduleDay } from "../../../../data/schedule";
+import { weekdays } from "../../../../data/schedule";
 import { TimeZone } from "../../../../data/translation";
-import { showConfirmationDialog } from "../../../../dialogs/generic/show-dialog-box";
+import { showScheduleBlockInfoDialog } from "./show-dialog-schedule-block-info";
 import { haStyle } from "../../../../resources/styles";
-import { HomeAssistant } from "../../../../types";
+import type { HomeAssistant } from "../../../../types";
 
 const defaultFullCalendarConfig: CalendarOptions = {
   plugins: [timeGridPlugin, interactionPlugin],
@@ -103,7 +100,7 @@ class HaScheduleForm extends LitElement {
   public connectedCallback(): void {
     super.connectedCallback();
     if (this.hasUpdated && !this.calendar) {
-      this.setupCalendar();
+      this._setupCalendar();
     }
   }
 
@@ -178,10 +175,10 @@ class HaScheduleForm extends LitElement {
   }
 
   protected firstUpdated(): void {
-    this.setupCalendar();
+    this._setupCalendar();
   }
 
-  private setupCalendar(): void {
+  private _setupCalendar(): void {
     const config: CalendarOptions = {
       ...defaultFullCalendarConfig,
       locale: this.hass.language,
@@ -299,6 +296,7 @@ class HaScheduleForm extends LitElement {
 
     const endFormatted = formatTime24h(end, this.hass.locale, this.hass.config);
     newValue[day][index] = {
+      ...newValue[day][index],
       from: value.from,
       to:
         !isSameDay(start, end) || endFormatted === "0:00"
@@ -325,6 +323,7 @@ class HaScheduleForm extends LitElement {
 
     const endFormatted = formatTime24h(end, this.hass.locale, this.hass.config);
     const event = {
+      ...newValue[day][index],
       from: formatTime24h(start, this.hass.locale, this.hass.config),
       to:
         !isSameDay(start, end) || endFormatted === "0:00"
@@ -352,21 +351,34 @@ class HaScheduleForm extends LitElement {
   }
 
   private async _handleEventClick(info: any) {
-    if (
-      !(await showConfirmationDialog(this, {
-        title: this.hass.localize("ui.dialogs.helper_settings.schedule.delete"),
-        text: this.hass.localize(
-          "ui.dialogs.helper_settings.schedule.confirm_delete"
-        ),
-        destructive: true,
-        confirmText: this.hass.localize("ui.common.delete"),
-      }))
-    ) {
-      return;
-    }
     const [day, index] = info.event.id.split("-");
-    const value = [...this[`_${day}`]];
+    const item = [...this[`_${day}`]][index];
+    showScheduleBlockInfoDialog(this, {
+      block: item,
+      updateBlock: (newBlock) => this._updateBlock(day, index, newBlock),
+      deleteBlock: () => this._deleteBlock(day, index),
+    });
+  }
 
+  private _updateBlock(day, index, newBlock) {
+    const [fromH, fromM, _fromS] = newBlock.from.split(":");
+    newBlock.from = `${fromH}:${fromM}`;
+    const [toH, toM, _toS] = newBlock.to.split(":");
+    newBlock.to = `${toH}:${toM}`;
+    if (Number(toH) === 0 && Number(toM) === 0) {
+      newBlock.to = "24:00";
+    }
+    const newValue = { ...this._item };
+    newValue[day] = [...this._item![day]];
+    newValue[day][index] = newBlock;
+
+    fireEvent(this, "value-changed", {
+      value: newValue,
+    });
+  }
+
+  private _deleteBlock(day, index) {
+    const value = [...this[`_${day}`]];
     const newValue = { ...this._item };
     value.splice(parseInt(index), 1);
     newValue[day] = value;

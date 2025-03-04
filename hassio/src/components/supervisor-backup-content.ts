@@ -1,35 +1,26 @@
 import { mdiFolder, mdiPuzzle } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  TemplateResult,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { TemplateResult } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query } from "lit/decorators";
 import { atLeastVersion } from "../../../src/common/config/version";
 import { formatDate } from "../../../src/common/datetime/format_date";
 import { formatDateTime } from "../../../src/common/datetime/format_date_time";
-import { LocalizeFunc } from "../../../src/common/translations/localize";
 import "../../../src/components/ha-checkbox";
 import "../../../src/components/ha-formfield";
 import "../../../src/components/ha-textfield";
+import "../../../src/components/ha-password-field";
 import "../../../src/components/ha-radio";
 import type { HaRadio } from "../../../src/components/ha-radio";
-import {
+import type {
   HassioBackupDetail,
   HassioFullBackupCreateParams,
   HassioPartialBackupCreateParams,
 } from "../../../src/data/hassio/backup";
-import { Supervisor } from "../../../src/data/supervisor/supervisor";
+import type { Supervisor } from "../../../src/data/supervisor/supervisor";
 import { mdiHomeAssistant } from "../../../src/resources/home-assistant-logo-svg";
-import { HomeAssistant, TranslationDict } from "../../../src/types";
+import type { HomeAssistant } from "../../../src/types";
 import "./supervisor-formfield-label";
 import type { HaTextField } from "../../../src/components/ha-textfield";
-
-type BackupOrRestoreKey = keyof TranslationDict["supervisor"]["backup"] &
-  keyof TranslationDict["ui"]["panel"]["page-onboarding"]["restore"];
 
 interface CheckboxItem {
   slug: string;
@@ -70,31 +61,30 @@ const _computeAddons = (addons): AddonCheckboxItem[] =>
 
 @customElement("supervisor-backup-content")
 export class SupervisorBackupContent extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
-
-  @property({ attribute: false }) public localize?: LocalizeFunc;
+  @property({ attribute: false }) public hass?: HomeAssistant;
 
   @property({ attribute: false }) public supervisor?: Supervisor;
 
   @property({ attribute: false }) public backup?: HassioBackupDetail;
 
-  @property() public backupType: HassioBackupDetail["type"] = "full";
+  @property({ attribute: false })
+  public backupType: HassioBackupDetail["type"] = "full";
 
   @property({ attribute: false }) public folders?: CheckboxItem[];
 
   @property({ attribute: false }) public addons?: AddonCheckboxItem[];
 
-  @property({ type: Boolean }) public homeAssistant = false;
+  @property({ attribute: false }) public homeAssistant = false;
 
-  @property({ type: Boolean }) public backupHasPassword = false;
+  @property({ attribute: false }) public backupHasPassword = false;
 
   @property({ type: Boolean }) public onboarding = false;
 
-  @property() public backupName = "";
+  @property({ attribute: false }) public backupName = "";
 
-  @property() public backupPassword = "";
+  @property({ attribute: false }) public backupPassword = "";
 
-  @property() public confirmBackupPassword = "";
+  @property({ attribute: false }) public confirmBackupPassword = "";
 
   @query("ha-textfield, ha-radio, ha-checkbox", true) private _focusTarget;
 
@@ -119,10 +109,6 @@ export class SupervisorBackupContent extends LitElement {
     this._focusTarget?.focus();
   }
 
-  private _localize = (key: BackupOrRestoreKey) =>
-    this.supervisor?.localize(`backup.${key}`) ||
-    this.localize!(`ui.panel.page-onboarding.restore.${key}`);
-
   protected render() {
     if (!this.onboarding && !this.supervisor) {
       return nothing;
@@ -136,8 +122,8 @@ export class SupervisorBackupContent extends LitElement {
       ${this.backup
         ? html`<div class="details">
             ${this.backup.type === "full"
-              ? this._localize("full_backup")
-              : this._localize("partial_backup")}
+              ? this.supervisor?.localize("backup.full_backup")
+              : this.supervisor?.localize("backup.partial_backup")}
             (${Math.ceil(this.backup.size * 10) / 10 + " MB"})<br />
             ${this.hass
               ? formatDateTime(
@@ -149,7 +135,7 @@ export class SupervisorBackupContent extends LitElement {
           </div>`
         : html`<ha-textfield
             name="backupName"
-            .label=${this._localize("name")}
+            .label=${this.supervisor?.localize("backup.name")}
             .value=${this.backupName}
             @change=${this._handleTextValueChanged}
           >
@@ -157,11 +143,13 @@ export class SupervisorBackupContent extends LitElement {
       ${!this.backup || this.backup.type === "full"
         ? html`<div class="sub-header">
               ${!this.backup
-                ? this._localize("type")
-                : this._localize("select_type")}
+                ? this.supervisor?.localize("backup.type")
+                : this.supervisor?.localize("backup.select_type")}
             </div>
             <div class="backup-types">
-              <ha-formfield .label=${this._localize("full_backup")}>
+              <ha-formfield
+                .label=${this.supervisor?.localize("backup.full_backup")}
+              >
                 <ha-radio
                   @change=${this._handleRadioValueChanged}
                   value="full"
@@ -170,7 +158,9 @@ export class SupervisorBackupContent extends LitElement {
                 >
                 </ha-radio>
               </ha-formfield>
-              <ha-formfield .label=${this._localize("partial_backup")}>
+              <ha-formfield
+                .label=${this.supervisor?.localize("backup.partial_backup")}
+              >
                 <ha-radio
                   @change=${this._handleRadioValueChanged}
                   value="partial"
@@ -190,13 +180,14 @@ export class SupervisorBackupContent extends LitElement {
                     .iconPath=${mdiHomeAssistant}
                     .version=${this.backup
                       ? this.backup.homeassistant
-                      : this.hass.config.version}
+                      : this.hass?.config.version}
                   >
                   </supervisor-formfield-label>`}
                 >
                   <ha-checkbox
-                    .checked=${this.homeAssistant}
-                    @change=${this.toggleHomeAssistant}
+                    .checked=${this.onboarding || this.homeAssistant}
+                    .disabled=${this.onboarding}
+                    @change=${this._toggleHomeAssistant}
                   >
                   </ha-checkbox>
                 </ha-formfield>`
@@ -205,7 +196,7 @@ export class SupervisorBackupContent extends LitElement {
               ? html`
                   <ha-formfield
                     .label=${html`<supervisor-formfield-label
-                      .label=${this._localize("folders")}
+                      .label=${this.supervisor?.localize("backup.folders")}
                       .iconPath=${mdiFolder}
                     >
                     </supervisor-formfield-label>`}
@@ -225,7 +216,7 @@ export class SupervisorBackupContent extends LitElement {
               ? html`
                   <ha-formfield
                     .label=${html`<supervisor-formfield-label
-                      .label=${this._localize("addons")}
+                      .label=${this.supervisor?.localize("backup.addons")}
                       .iconPath=${mdiPuzzle}
                     >
                     </supervisor-formfield-label>`}
@@ -250,7 +241,7 @@ export class SupervisorBackupContent extends LitElement {
       ${!this.backup
         ? html`<ha-formfield
             class="password"
-            .label=${this._localize("password_protection")}
+            .label=${this.supervisor?.localize("backup.password_protection")}
           >
             <ha-checkbox
               .checked=${this.backupHasPassword}
@@ -261,86 +252,82 @@ export class SupervisorBackupContent extends LitElement {
         : ""}
       ${this.backupHasPassword
         ? html`
-            <ha-textfield
-              .label=${this._localize("password")}
-              type="password"
+            <ha-password-field
+              .label=${this.supervisor?.localize("backup.password")}
               name="backupPassword"
               .value=${this.backupPassword}
               @change=${this._handleTextValueChanged}
             >
-            </ha-textfield>
+            </ha-password-field>
             ${!this.backup
-              ? html`<ha-textfield
-                  .label=${this._localize("confirm_password")}
-                  type="password"
+              ? html`<ha-password-field
+                  .label=${this.supervisor?.localize("backup.confirm_password")}
                   name="confirmBackupPassword"
                   .value=${this.confirmBackupPassword}
                   @change=${this._handleTextValueChanged}
                 >
-                </ha-textfield>`
+                </ha-password-field>`
               : ""}
           `
         : ""}
     `;
   }
 
-  private toggleHomeAssistant() {
+  private _toggleHomeAssistant() {
     this.homeAssistant = !this.homeAssistant;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      .partial-picker ha-formfield {
-        display: block;
-      }
-      .partial-picker ha-checkbox {
-        --mdc-checkbox-touch-target-size: 32px;
-      }
-      .partial-picker {
-        display: block;
-        margin: 0px -6px;
-      }
-      supervisor-formfield-label {
-        display: inline-flex;
-        align-items: center;
-      }
-      hr {
-        border-color: var(--divider-color);
-        border-bottom: none;
-        margin: 16px 0;
-      }
-      .details {
-        color: var(--secondary-text-color);
-      }
-      .section-content {
-        display: flex;
-        flex-direction: column;
-        margin-left: 30px;
-        margin-inline-start: 30px;
-        margin-inline-end: initial;
-      }
-      ha-formfield.password {
-        display: block;
-        margin: 0 -14px -16px;
-      }
-      .backup-types {
-        display: flex;
-        margin-left: -13px;
-        margin-inline-start: -13px;
-        margin-inline-end: initial;
-      }
-      .sub-header {
-        margin-top: 8px;
-      }
-    `;
-  }
+  static styles = css`
+    .partial-picker ha-formfield {
+      display: block;
+    }
+    .partial-picker ha-checkbox {
+      --mdc-checkbox-touch-target-size: 32px;
+    }
+    .partial-picker {
+      display: block;
+      margin: 0px -6px;
+    }
+    supervisor-formfield-label {
+      display: inline-flex;
+      align-items: center;
+    }
+    hr {
+      border-color: var(--divider-color);
+      border-bottom: none;
+      margin: 16px 0;
+    }
+    .details {
+      color: var(--secondary-text-color);
+    }
+    .section-content {
+      display: flex;
+      flex-direction: column;
+      margin-left: 30px;
+      margin-inline-start: 30px;
+      margin-inline-end: initial;
+    }
+    ha-formfield.password {
+      display: block;
+      margin: 0 -14px -16px;
+    }
+    .backup-types {
+      display: flex;
+      margin-left: -13px;
+      margin-inline-start: -13px;
+      margin-inline-end: initial;
+    }
+    .sub-header {
+      margin-top: 8px;
+    }
+  `;
 
   public backupDetails():
     | HassioPartialBackupCreateParams
     | HassioFullBackupCreateParams {
     const data: any = {};
 
-    if (!this.backup) {
+    if (!this.backup && this.hass) {
       data.name =
         this.backupName ||
         formatDate(new Date(), this.hass.locale, this.hass.config);
@@ -370,7 +357,9 @@ export class SupervisorBackupContent extends LitElement {
     if (folders?.length) {
       data.folders = folders;
     }
-    data.homeassistant = this.homeAssistant;
+
+    // onboarding needs at least homeassistant to restore
+    data.homeassistant = this.onboarding || this.homeAssistant;
 
     return data;
   }
@@ -392,6 +381,7 @@ export class SupervisorBackupContent extends LitElement {
             .iconPath=${section === "addons" ? mdiPuzzle : mdiFolder}
             .imageUrl=${section === "addons" &&
             !this.onboarding &&
+            this.hass &&
             atLeastVersion(this.hass.config.version, 0, 105) &&
             addons?.get(item.slug)?.icon
               ? `/api/hassio/addons/${item.slug}/icon`

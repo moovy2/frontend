@@ -3,33 +3,27 @@ import {
   mdiBrightness6,
   mdiCreation,
   mdiFileWordBox,
-  mdiLightbulb,
   mdiLightbulbOff,
+  mdiLightbulbOn,
   mdiPower,
 } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { stopPropagation } from "../../../common/dom/stop_propagation";
 import { supportsFeature } from "../../../common/entity/supports-feature";
-import "../../../components/ha-attributes";
 import "../../../components/ha-attribute-icon";
+import "../../../components/ha-attributes";
 import "../../../components/ha-control-select-menu";
 import "../../../components/ha-icon-button-group";
 import "../../../components/ha-icon-button-toggle";
 import "../../../components/ha-list-item";
 import { UNAVAILABLE } from "../../../data/entity";
-import { ExtEntityRegistryEntry } from "../../../data/entity_registry";
+import type { ExtEntityRegistryEntry } from "../../../data/entity_registry";
 import { forwardHaptic } from "../../../data/haptics";
+import type { LightEntity } from "../../../data/light";
 import {
   LightColorMode,
-  LightEntity,
   LightEntityFeature,
   lightSupportsBrightness,
   lightSupportsColor,
@@ -127,7 +121,7 @@ class MoreInfoLight extends LitElement {
               <ha-state-control-toggle
                 .stateObj=${this.stateObj}
                 .hass=${this.hass}
-                .iconPathOn=${mdiLightbulb}
+                .iconPathOn=${mdiLightbulbOn}
                 .iconPathOff=${mdiLightbulbOff}
               ></ha-state-control-toggle>
             `

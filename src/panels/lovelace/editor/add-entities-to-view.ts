@@ -1,14 +1,11 @@
-import { LovelacePanelConfig } from "../../../data/lovelace";
-import { LovelaceCardConfig } from "../../../data/lovelace/config/card";
-import { LovelaceSectionConfig } from "../../../data/lovelace/config/section";
-import {
-  LovelaceConfig,
-  fetchConfig,
-  saveConfig,
-} from "../../../data/lovelace/config/types";
+import type { LovelacePanelConfig } from "../../../data/lovelace";
+import type { LovelaceCardConfig } from "../../../data/lovelace/config/card";
+import type { LovelaceSectionConfig } from "../../../data/lovelace/config/section";
+import type { LovelaceConfig } from "../../../data/lovelace/config/types";
+import { fetchConfig, saveConfig } from "../../../data/lovelace/config/types";
 import { fetchDashboards } from "../../../data/lovelace/dashboard";
 import { showAlertDialog } from "../../../dialogs/generic/show-dialog-box";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 import { showSuggestCardDialog } from "./card-editor/show-suggest-card-dialog";
 import { showSelectViewDialog } from "./select-view/show-select-view-dialog";
 
@@ -45,7 +42,7 @@ export const addEntitiesToLovelaceView = async (
   if (mainLovelaceMode === "storage") {
     try {
       lovelaceConfig = await fetchConfig(hass.connection, null, false);
-    } catch (err: any) {
+    } catch (_err: any) {
       // default dashboard is in generated mode
     }
   }
@@ -62,7 +59,7 @@ export const addEntitiesToLovelaceView = async (
         );
         urlPath = storageDash.url_path;
         break;
-      } catch (err: any) {
+      } catch (_err: any) {
         // dashboard is in generated mode
       }
     }
@@ -101,7 +98,7 @@ export const addEntitiesToLovelaceView = async (
       saveConfig: async (newConfig: LovelaceConfig): Promise<void> => {
         try {
           await saveConfig(hass!, null, newConfig);
-        } catch (err: any) {
+        } catch (_err: any) {
           alert(hass.localize("ui.panel.lovelace.add_entities.saving_failed"));
         }
       },

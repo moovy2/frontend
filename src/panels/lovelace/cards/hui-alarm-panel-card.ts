@@ -1,12 +1,6 @@
-import { HassEntity } from "home-assistant-js-websocket";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { HassEntity, UnsubscribeFunc } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { styleMap } from "lit/directives/style-map";
@@ -19,9 +13,9 @@ import "../../../components/ha-card";
 import "../../../components/ha-state-icon";
 import "../../../components/ha-textfield";
 import type { HaTextField } from "../../../components/ha-textfield";
+import type { AlarmMode } from "../../../data/alarm_control_panel";
 import {
   ALARM_MODES,
-  AlarmMode,
   FORMAT_NUMBER,
   callAlarmAction,
 } from "../../../data/alarm_control_panel";
@@ -30,7 +24,12 @@ import type { HomeAssistant } from "../../../types";
 import { findEntities } from "../common/find-entities";
 import { createEntityNotFoundWarning } from "../components/hui-warning";
 import type { LovelaceCard } from "../types";
-import { AlarmPanelCardConfig, AlarmPanelCardConfigState } from "./types";
+import type { ExtEntityRegistryEntry } from "../../../data/entity_registry";
+import {
+  getExtendedEntityRegistryEntry,
+  subscribeEntityRegistry,
+} from "../../../data/entity_registry";
+import type { AlarmPanelCardConfig, AlarmPanelCardConfigState } from "./types";
 
 const BUTTONS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "clear"];
 
@@ -99,7 +98,21 @@ class HuiAlarmPanelCard extends LitElement implements LovelaceCard {
 
   @state() private _config?: AlarmPanelCardConfig;
 
+  @state() private _entry?: ExtEntityRegistryEntry | null;
+
   @query("#alarmCode") private _input?: HaTextField;
+
+  private _unsubEntityRegistry?: UnsubscribeFunc;
+
+  public connectedCallback() {
+    super.connectedCallback();
+    this._subscribeEntityEntry();
+  }
+
+  public disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubscribeEntityRegistry();
+  }
 
   public async getCardSize(): Promise<number> {
     if (!this._config || !this.hass) {
@@ -123,6 +136,7 @@ class HuiAlarmPanelCard extends LitElement implements LovelaceCard {
     }
 
     this._config = { ...config };
+    this._subscribeEntityEntry();
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -165,6 +179,36 @@ class HuiAlarmPanelCard extends LitElement implements LovelaceCard {
     );
   }
 
+  private async _unsubscribeEntityRegistry() {
+    if (this._unsubEntityRegistry) {
+      this._unsubEntityRegistry();
+      this._unsubEntityRegistry = undefined;
+    }
+  }
+
+  private async _subscribeEntityEntry() {
+    if (!this._config?.entity) {
+      return;
+    }
+    try {
+      this._unsubEntityRegistry = subscribeEntityRegistry(
+        this.hass!.connection,
+        async (entries) => {
+          if (
+            entries.some((entry) => entry.entity_id === this._config!.entity)
+          ) {
+            this._entry = await getExtendedEntityRegistryEntry(
+              this.hass!,
+              this._config!.entity
+            );
+          }
+        }
+      );
+    } catch (_e) {
+      this._entry = null;
+    }
+  }
+
   protected render() {
     if (!this._config || !this.hass) {
       return nothing;
@@ -183,6 +227,8 @@ class HuiAlarmPanelCard extends LitElement implements LovelaceCard {
     }
 
     const stateLabel = this._stateDisplay(stateObj.state);
+
+    const defaultCode = this._entry?.options?.alarm_control_panel?.default_code;
 
     return html`
       <ha-card>
@@ -222,7 +268,7 @@ class HuiAlarmPanelCard extends LitElement implements LovelaceCard {
             `
           )}
         </div>
-        ${!stateObj.attributes.code_format
+        ${!stateObj.attributes.code_format || defaultCode
           ? nothing
           : html`
               <ha-textfield
@@ -234,7 +280,7 @@ class HuiAlarmPanelCard extends LitElement implements LovelaceCard {
                   : "text"}
               ></ha-textfield>
             `}
-        ${stateObj.attributes.code_format !== FORMAT_NUMBER
+        ${stateObj.attributes.code_format !== FORMAT_NUMBER || defaultCode
           ? nothing
           : html`
               <div id="keypad">
@@ -302,103 +348,101 @@ class HuiAlarmPanelCard extends LitElement implements LovelaceCard {
     });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-card {
-        padding-bottom: 16px;
-        position: relative;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        box-sizing: border-box;
-        --alarm-state-color: var(--state-inactive-color);
-      }
+  static styles = css`
+    ha-card {
+      padding-bottom: 16px;
+      position: relative;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+      --alarm-state-color: var(--state-inactive-color);
+    }
 
-      ha-assist-chip {
-        --ha-assist-chip-filled-container-color: var(--alarm-state-color);
-        --primary-text-color: var(--text-primary-color);
-      }
+    ha-assist-chip {
+      --ha-assist-chip-filled-container-color: var(--alarm-state-color);
+      --primary-text-color: var(--text-primary-color);
+    }
 
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        box-sizing: border-box;
-      }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      box-sizing: border-box;
+    }
 
-      .triggered,
-      .arming,
-      .pending {
-        animation: pulse 1s infinite;
-      }
+    .triggered,
+    .arming,
+    .pending {
+      animation: pulse 1s infinite;
+    }
 
-      @keyframes pulse {
-        0% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0;
-        }
-        100% {
-          opacity: 1;
-        }
+    @keyframes pulse {
+      0% {
+        opacity: 1;
       }
+      50% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
 
-      ha-textfield {
-        display: block;
-        margin: 8px;
-        max-width: 150px;
-        text-align: center;
-      }
+    ha-textfield {
+      display: block;
+      margin: 8px;
+      max-width: 150px;
+      text-align: center;
+    }
 
-      .state {
-        margin-left: 16px;
-        margin-inline-start: 16px;
-        margin-inline-end: initial;
-        position: relative;
-        bottom: 16px;
-        color: var(--alarm-state-color);
-        animation: none;
-      }
+    .state {
+      margin-left: 16px;
+      margin-inline-start: 16px;
+      margin-inline-end: initial;
+      position: relative;
+      bottom: 16px;
+      color: var(--alarm-state-color);
+      animation: none;
+    }
 
-      #keypad {
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin: auto;
-        width: 100%;
-        max-width: 300px;
-        direction: ltr;
-      }
+    #keypad {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: auto;
+      width: 100%;
+      max-width: 300px;
+      direction: ltr;
+    }
 
-      #keypad mwc-button {
-        padding: 8px;
-        width: 30%;
-        box-sizing: border-box;
-      }
+    #keypad mwc-button {
+      padding: 8px;
+      width: 30%;
+      box-sizing: border-box;
+    }
 
-      .actions {
-        margin: 0;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
+    .actions {
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
 
-      .actions mwc-button {
-        margin: 0 4px 4px;
-      }
+    .actions mwc-button {
+      margin: 0 4px 4px;
+    }
 
-      mwc-button#disarm {
-        color: var(--error-color);
-      }
+    mwc-button#disarm {
+      color: var(--error-color);
+    }
 
-      mwc-button.numberkey {
-        --mdc-typography-button-font-size: var(--keypad-font-size, 0.875rem);
-      }
-    `;
-  }
+    mwc-button.numberkey {
+      --mdc-typography-button-font-size: var(--keypad-font-size, 0.875rem);
+    }
+  `;
 }
 
 declare global {

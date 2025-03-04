@@ -1,4 +1,5 @@
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state, property } from "lit/decorators";
 import { computeStateName } from "../../../common/entity/compute_state_name";
 import "../../../components/entity/state-badge";
@@ -52,7 +53,6 @@ export class HuiButtonsBase extends LitElement {
                       .stateObj=${stateObj}
                       .overrideIcon=${entityConf.icon}
                       .overrideImage=${entityConf.image}
-                      class=${name ? "" : "no-text"}
                       .stateColor=${true}
                       slot="icon"
                     ></state-badge>
@@ -92,26 +92,6 @@ export class HuiButtonsBase extends LitElement {
           color: var(--secondary-text-color);
           align-items: center;
           justify-content: center;
-          width: 24px;
-          height: 24px;
-          margin-left: -4px;
-          margin-inline-start: -4px;
-          margin-inline-end: initial;
-          margin-top: -2px;
-        }
-        state-badge.no-text {
-          width: 26px;
-          height: 26px;
-          margin-left: -3px;
-          margin-inline-start: -3px;
-          margin-inline-end: initial;
-          margin-top: -3px;
-        }
-        ha-assist-chip state-badge {
-          margin-right: -4px;
-          margin-inline-end: -4px;
-          margin-inline-start: initial;
-          --mdc-icon-size: 18px;
         }
         @media all and (max-width: 450px), all and (max-height: 500px) {
           .ha-scrollbar {

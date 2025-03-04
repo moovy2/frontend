@@ -1,22 +1,14 @@
-import { Ripple } from "@material/mwc-ripple";
-import { RippleHandlers } from "@material/mwc-ripple/ripple-handlers";
 import { SelectBase } from "@material/mwc-select/mwc-select-base";
 import { mdiMenuDown } from "@mdi/js";
 import { css, html, nothing } from "lit";
-import {
-  customElement,
-  eventOptions,
-  property,
-  query,
-  queryAsync,
-  state,
-} from "lit/decorators";
+import { customElement, property, query } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { ifDefined } from "lit/directives/if-defined";
 import { debounce } from "../common/util/debounce";
 import { nextRender } from "../common/util/render-status";
 import "./ha-icon";
 import type { HaIcon } from "./ha-icon";
+import "./ha-ripple";
 import "./ha-svg-icon";
 import type { HaSvgIcon } from "./ha-svg-icon";
 
@@ -31,10 +23,6 @@ export class HaControlSelectMenu extends SelectBase {
 
   @property({ type: Boolean, attribute: "hide-label" })
   public hideLabel = false;
-
-  @queryAsync("mwc-ripple") private _ripple!: Promise<Ripple | null>;
-
-  @state() private _shouldRenderRipple = false;
 
   public override render() {
     const classes = {
@@ -69,19 +57,13 @@ export class HaControlSelectMenu extends SelectBase {
           aria-labelledby=${ifDefined(labelledby)}
           aria-label=${ifDefined(labelAttribute)}
           aria-required=${this.required}
-          @click=${this.onClick}
+          aria-controls="listbox"
           @focus=${this.onFocus}
           @blur=${this.onBlur}
+          @click=${this.onClick}
           @keydown=${this.onKeydown}
-          @mousedown=${this.handleRippleActivate}
-          @mouseup=${this.handleRippleDeactivate}
-          @mouseenter=${this.handleRippleMouseEnter}
-          @mouseleave=${this.handleRippleMouseLeave}
-          @touchstart=${this.handleRippleActivate}
-          @touchend=${this.handleRippleDeactivate}
-          @touchcancel=${this.handleRippleDeactivate}
         >
-          ${this.renderIcon()}
+          ${this._renderIcon()}
           <div class="content">
             ${this.hideLabel
               ? nothing
@@ -90,17 +72,15 @@ export class HaControlSelectMenu extends SelectBase {
               ? html`<p class="value">${this.selectedText}</p>`
               : nothing}
           </div>
-          ${this.renderArrow()}
-          ${this._shouldRenderRipple && !this.disabled
-            ? html` <mwc-ripple></mwc-ripple> `
-            : nothing}
+          ${this._renderArrow()}
+          <ha-ripple .disabled=${this.disabled}></ha-ripple>
         </div>
         ${this.renderMenu()}
       </div>
     `;
   }
 
-  private renderArrow() {
+  private _renderArrow() {
     if (!this.showArrow) return nothing;
 
     return html`
@@ -110,7 +90,7 @@ export class HaControlSelectMenu extends SelectBase {
     `;
   }
 
-  private renderIcon() {
+  private _renderIcon() {
     const index = this.mdcFoundation?.getSelectedIndex();
     const items = this.menuElement?.items ?? [];
     const item = index != null ? items[index] : undefined;
@@ -135,46 +115,6 @@ export class HaControlSelectMenu extends SelectBase {
     `;
   }
 
-  protected onFocus() {
-    this.handleRippleFocus();
-    super.onFocus();
-  }
-
-  protected onBlur() {
-    this.handleRippleBlur();
-    super.onBlur();
-  }
-
-  private _rippleHandlers: RippleHandlers = new RippleHandlers(() => {
-    this._shouldRenderRipple = true;
-    return this._ripple;
-  });
-
-  @eventOptions({ passive: true })
-  private handleRippleActivate(evt?: Event) {
-    this._rippleHandlers.startPress(evt);
-  }
-
-  private handleRippleDeactivate() {
-    this._rippleHandlers.endPress();
-  }
-
-  private handleRippleMouseEnter() {
-    this._rippleHandlers.startHover();
-  }
-
-  private handleRippleMouseLeave() {
-    this._rippleHandlers.endHover();
-  }
-
-  private handleRippleFocus() {
-    this._rippleHandlers.startFocus();
-  }
-
-  private handleRippleBlur() {
-    this._rippleHandlers.endFocus();
-  }
-
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener("translations-updated", this._translationsUpdated);
@@ -197,6 +137,7 @@ export class HaControlSelectMenu extends SelectBase {
     css`
       :host {
         display: inline-block;
+        --control-select-menu-focus-color: var(--secondary-text-color);
         --control-select-menu-text-color: var(--primary-text-color);
         --control-select-menu-background-color: var(--disabled-color);
         --control-select-menu-background-opacity: 0.2;
@@ -204,6 +145,7 @@ export class HaControlSelectMenu extends SelectBase {
         --control-select-menu-height: 48px;
         --control-select-menu-padding: 6px 10px;
         --mdc-icon-size: 20px;
+        --ha-ripple-color: var(--secondary-text-color);
         font-size: 14px;
         line-height: 1.4;
         width: auto;
@@ -224,10 +166,11 @@ export class HaControlSelectMenu extends SelectBase {
         outline: none;
         overflow: hidden;
         background: none;
-        --mdc-ripple-color: var(--control-select-menu-background-color);
         /* For safari border-radius overflow */
         z-index: 0;
-        transition: color 180ms ease-in-out;
+        transition:
+          box-shadow 180ms ease-in-out,
+          color 180ms ease-in-out;
         gap: 10px;
         width: 100%;
         user-select: none;
@@ -262,6 +205,10 @@ export class HaControlSelectMenu extends SelectBase {
         font-size: inherit;
         line-height: inherit;
         letter-spacing: inherit;
+      }
+
+      .select-anchor:focus-visible {
+        box-shadow: 0 0 0 2px var(--control-select-menu-focus-color);
       }
 
       .select-anchor::before {

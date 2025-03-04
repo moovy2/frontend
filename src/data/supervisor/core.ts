@@ -1,12 +1,20 @@
 import { atLeastVersion } from "../../common/config/version";
-import { HomeAssistant } from "../../types";
-import { HassioResponse } from "../hassio/common";
+import type { HomeAssistant } from "../../types";
+import type { HassioResponse } from "../hassio/common";
 
 export const restartCore = async (hass: HomeAssistant) => {
   await hass.callService("homeassistant", "restart");
 };
 
 export const updateCore = async (hass: HomeAssistant, backup: boolean) => {
+  if (atLeastVersion(hass.config.version, 2025, 2, 0)) {
+    await hass.callWS({
+      type: "hassio/update/core",
+      backup: backup,
+    });
+    return;
+  }
+
   if (atLeastVersion(hass.config.version, 2021, 2, 4)) {
     await hass.callWS({
       type: "supervisor/api",
@@ -15,9 +23,10 @@ export const updateCore = async (hass: HomeAssistant, backup: boolean) => {
       timeout: null,
       data: { backup },
     });
-  } else {
-    await hass.callApi<HassioResponse<void>>("POST", `hassio/core/update`, {
-      backup,
-    });
+    return;
   }
+
+  await hass.callApi<HassioResponse<void>>("POST", "hassio/core/update", {
+    backup,
+  });
 };

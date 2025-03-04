@@ -9,7 +9,7 @@ import {
   mdiVolumeOff,
   mdiVolumePlus,
 } from "@mdi/js";
-import { CSSResultGroup, LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { stopPropagation } from "../../../common/dom/stop_propagation";
 import { stateActive } from "../../../common/entity/state_active";
@@ -19,15 +19,18 @@ import "../../../components/ha-select";
 import "../../../components/ha-slider";
 import "../../../components/ha-svg-icon";
 import { showMediaBrowserDialog } from "../../../components/media-player/show-media-browser-dialog";
-import {
+import { isUnavailableState } from "../../../data/entity";
+import type {
   MediaPickedEvent,
   MediaPlayerEntity,
+} from "../../../data/media-player";
+import {
   MediaPlayerEntityFeature,
   computeMediaControls,
   handleMediaControlClick,
   mediaPlayerPlayMedia,
 } from "../../../data/media-player";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 
 @customElement("more-info-media_player")
 class MoreInfoMediaPlayer extends LitElement {
@@ -62,7 +65,8 @@ class MoreInfoMediaPlayer extends LitElement {
                 `
               )}
         </div>
-        ${supportsFeature(stateObj, MediaPlayerEntityFeature.BROWSE_MEDIA)
+        ${!isUnavailableState(stateObj.state) &&
+        supportsFeature(stateObj, MediaPlayerEntityFeature.BROWSE_MEDIA)
           ? html`
               <mwc-button
                 .label=${this.hass.localize(
@@ -200,63 +204,67 @@ class MoreInfoMediaPlayer extends LitElement {
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-icon-button[action="turn_off"],
-      ha-icon-button[action="turn_on"],
-      ha-slider {
-        flex-grow: 1;
-      }
+  static styles = css`
+    ha-slider {
+      flex-grow: 1;
+    }
 
-      .controls {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        --mdc-theme-primary: currentColor;
-        direction: ltr;
-      }
+    ha-icon-button[action="turn_off"],
+    ha-icon-button[action="turn_on"] {
+      margin-right: auto;
+      margin-left: inherit;
+      margin-inline-start: inherit;
+      margin-inline-end: auto;
+    }
 
-      .basic-controls {
-        display: inline-flex;
-        flex-grow: 1;
-      }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      --mdc-theme-primary: currentColor;
+      direction: ltr;
+    }
 
-      .volume {
-        direction: ltr;
-      }
+    .basic-controls {
+      display: inline-flex;
+      flex-grow: 1;
+    }
 
-      .source-input,
-      .sound-input {
-        direction: var(--direction);
-      }
+    .volume {
+      direction: ltr;
+    }
 
-      .volume,
-      .source-input,
-      .sound-input {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
+    .source-input,
+    .sound-input {
+      direction: var(--direction);
+    }
 
-      .source-input ha-select,
-      .sound-input ha-select {
-        margin-left: 10px;
-        flex-grow: 1;
-        margin-inline-start: 10px;
-        margin-inline-end: initial;
-        direction: var(--direction);
-      }
+    .volume,
+    .source-input,
+    .sound-input {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
 
-      .tts {
-        margin-top: 16px;
-        font-style: italic;
-      }
+    .source-input ha-select,
+    .sound-input ha-select {
+      margin-left: 10px;
+      flex-grow: 1;
+      margin-inline-start: 10px;
+      margin-inline-end: initial;
+      direction: var(--direction);
+    }
 
-      mwc-button > ha-svg-icon {
-        vertical-align: text-bottom;
-      }
-    `;
-  }
+    .tts {
+      margin-top: 16px;
+      font-style: italic;
+    }
+
+    mwc-button > ha-svg-icon {
+      vertical-align: text-bottom;
+    }
+  `;
 
   private _handleClick(e: MouseEvent): void {
     handleMediaControlClick(

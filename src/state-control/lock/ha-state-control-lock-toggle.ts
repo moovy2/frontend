@@ -1,11 +1,5 @@
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-} from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { styleMap } from "lit/directives/style-map";
@@ -15,8 +9,16 @@ import "../../components/ha-control-switch";
 import "../../components/ha-state-icon";
 import { UNAVAILABLE, UNKNOWN } from "../../data/entity";
 import { forwardHaptic } from "../../data/haptics";
-import { callProtectedLockService, LockEntity } from "../../data/lock";
-import { HomeAssistant } from "../../types";
+import type { LockEntity } from "../../data/lock";
+import { callProtectedLockService } from "../../data/lock";
+import type { HomeAssistant } from "../../types";
+import { fireEvent } from "../../common/dom/fire_event";
+
+declare global {
+  interface HASSDomEvents {
+    "lock-service-called": undefined;
+  }
+}
 
 @customElement("ha-state-control-lock-toggle")
 export class HaStateControlLockToggle extends LitElement {
@@ -48,7 +50,7 @@ export class HaStateControlLockToggle extends LitElement {
     this._isOn = true;
     try {
       await this._callService(true);
-    } catch (err) {
+    } catch (_err) {
       this._isOn = false;
     }
   }
@@ -57,7 +59,7 @@ export class HaStateControlLockToggle extends LitElement {
     this._isOn = false;
     try {
       await this._callService(false);
-    } catch (err) {
+    } catch (_err) {
       this._isOn = true;
     }
   }
@@ -67,6 +69,7 @@ export class HaStateControlLockToggle extends LitElement {
       return;
     }
     forwardHaptic("light");
+    fireEvent(this, "lock-service-called");
     callProtectedLockService(
       this,
       this.hass,
@@ -110,6 +113,7 @@ export class HaStateControlLockToggle extends LitElement {
 
     return html`
       <ha-control-switch
+        touch-action="none"
         vertical
         reversed
         .checked=${this._isOn}
@@ -141,57 +145,56 @@ export class HaStateControlLockToggle extends LitElement {
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      @keyframes pulse {
-        0% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0;
-        }
-        100% {
-          opacity: 1;
-        }
+  static styles = css`
+    @keyframes pulse {
+      0% {
+        opacity: 1;
       }
-      ha-control-switch {
-        height: 45vh;
-        max-height: 320px;
-        min-height: 200px;
-        --control-switch-thickness: 100px;
-        --control-switch-border-radius: 24px;
-        --control-switch-padding: 6px;
-        --mdc-icon-size: 24px;
+      50% {
+        opacity: 0;
       }
-      .pulse {
-        animation: pulse 1s infinite;
+      100% {
+        opacity: 1;
       }
-      .buttons {
-        display: flex;
-        flex-direction: column;
-        width: 100px;
-        height: 45vh;
-        max-height: 320px;
-        min-height: 200px;
-        padding: 6px;
-        box-sizing: border-box;
-      }
-      ha-control-button {
-        flex: 1;
-        width: 100%;
-        --control-button-border-radius: 18px;
-        --mdc-icon-size: 24px;
-      }
-      ha-control-button.active {
-        --control-button-icon-color: white;
-        --control-button-background-color: var(--color);
-        --control-button-background-opacity: 1;
-      }
-      ha-control-button:not(:last-child) {
-        margin-bottom: 6px;
-      }
-    `;
-  }
+    }
+    ha-control-switch {
+      height: 45vh;
+      max-height: 320px;
+      min-height: 200px;
+      --control-switch-thickness: 130px;
+      --control-switch-border-radius: 36px;
+      --control-switch-padding: 6px;
+      --mdc-icon-size: 24px;
+    }
+    .pulse {
+      animation: pulse 1s infinite;
+    }
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      width: 130px;
+      height: 45vh;
+      max-height: 320px;
+      min-height: 200px;
+      padding: 6px;
+      box-sizing: border-box;
+    }
+    ha-control-button {
+      flex: 1;
+      width: 100%;
+      --control-button-border-radius: 36px;
+      --mdc-icon-size: 24px;
+    }
+    ha-control-button.active {
+      --control-button-icon-color: white;
+      --control-button-background-color: var(--color);
+      --control-button-focus-color: var(--color);
+      --control-button-background-opacity: 1;
+    }
+    ha-control-button:not(:last-child) {
+      margin-bottom: 6px;
+    }
+  `;
 }
 
 declare global {

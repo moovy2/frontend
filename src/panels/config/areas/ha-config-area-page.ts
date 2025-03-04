@@ -1,9 +1,11 @@
+import "@material/mwc-list/mwc-list-item";
 import { consume } from "@lit-labs/context";
 import "@material/mwc-button";
 import "@material/mwc-list";
 import { mdiDelete, mdiDotsVertical, mdiImagePlus, mdiPencil } from "@mdi/js";
-import { HassEntity } from "home-assistant-js-websocket/dist/types";
-import { CSSResultGroup, LitElement, css, html, nothing } from "lit";
+import type { HassEntity } from "home-assistant-js-websocket/dist/types";
+import type { CSSResultGroup } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
 import memoizeOne from "memoize-one";
@@ -17,54 +19,57 @@ import "../../../components/ha-card";
 import "../../../components/ha-icon-button";
 import "../../../components/ha-icon-next";
 import "../../../components/ha-list-item";
+import "../../../components/ha-button-menu";
+import "../../../components/ha-tooltip";
+import type { AreaRegistryEntry } from "../../../data/area_registry";
 import {
-  AreaRegistryEntry,
   deleteAreaRegistryEntry,
   updateAreaRegistryEntry,
 } from "../../../data/area_registry";
-import { AutomationEntity } from "../../../data/automation";
+import type { AutomationEntity } from "../../../data/automation";
 import { fullEntitiesContext } from "../../../data/context";
+import type { DeviceRegistryEntry } from "../../../data/device_registry";
 import {
-  DeviceRegistryEntry,
   computeDeviceName,
   sortDeviceRegistryByName,
 } from "../../../data/device_registry";
+import type { EntityRegistryEntry } from "../../../data/entity_registry";
 import {
-  EntityRegistryEntry,
   computeEntityRegistryName,
   sortEntityRegistryByName,
 } from "../../../data/entity_registry";
-import { SceneEntity } from "../../../data/scene";
-import { ScriptEntity } from "../../../data/script";
-import { RelatedResult, findRelated } from "../../../data/search";
+import type { SceneEntity } from "../../../data/scene";
+import type { ScriptEntity } from "../../../data/script";
+import type { RelatedResult } from "../../../data/search";
+import { findRelated } from "../../../data/search";
 import { showConfirmationDialog } from "../../../dialogs/generic/show-dialog-box";
 import { showMoreInfoDialog } from "../../../dialogs/more-info/show-ha-more-info-dialog";
 import "../../../layouts/hass-error-screen";
 import "../../../layouts/hass-subpage";
 import { haStyle } from "../../../resources/styles";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 import "../../logbook/ha-logbook";
 import {
   loadAreaRegistryDetailDialog,
   showAreaRegistryDetailDialog,
 } from "./show-dialog-area-registry-detail";
 
-declare type NameAndEntity<EntityType extends HassEntity> = {
+declare interface NameAndEntity<EntityType extends HassEntity> {
   name: string;
   entity: EntityType;
-};
+}
 
 @customElement("ha-config-area-page")
 class HaConfigAreaPage extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public areaId!: string;
+  @property({ attribute: false }) public areaId!: string;
 
   @property({ type: Boolean, reflect: true }) public narrow = false;
 
-  @property({ type: Boolean }) public isWide = false;
+  @property({ attribute: "is-wide", type: Boolean }) public isWide = false;
 
-  @property({ type: Boolean }) public showAdvanced = false;
+  @property({ attribute: false }) public showAdvanced = false;
 
   @state()
   @consume({ context: fullEntitiesContext, subscribe: true })
@@ -215,7 +220,12 @@ class HaConfigAreaPage extends LitElement {
       <hass-subpage
         .hass=${this.hass}
         .narrow=${this.narrow}
-        .header=${area.name}
+        .header=${html`${area.icon
+          ? html`<ha-icon
+              .icon=${area.icon}
+              style="margin-inline-end: 8px;"
+            ></ha-icon>`
+          : nothing}${area.name}`}
       >
         <ha-button-menu slot="toolbar-icon">
           <ha-icon-button
@@ -540,7 +550,11 @@ class HaConfigAreaPage extends LitElement {
   }
 
   private _renderScene(name: string, entityState: SceneEntity) {
-    return html`<div>
+    return html`<ha-tooltip
+      .distance=${-4}
+      .disabled=${!!entityState.attributes.id}
+      .content=${this.hass.localize("ui.panel.config.devices.cant_edit")}
+    >
       <a
         href=${ifDefined(
           entityState.attributes.id
@@ -553,18 +567,15 @@ class HaConfigAreaPage extends LitElement {
           <ha-icon-next slot="meta"></ha-icon-next>
         </ha-list-item>
       </a>
-      ${!entityState.attributes.id
-        ? html`
-            <simple-tooltip animation-delay="0">
-              ${this.hass.localize("ui.panel.config.devices.cant_edit")}
-            </simple-tooltip>
-          `
-        : ""}
-    </div>`;
+    </ha-tooltip>`;
   }
 
   private _renderAutomation(name: string, entityState: AutomationEntity) {
-    return html`<div>
+    return html`<ha-tooltip
+      .disabled=${!!entityState.attributes.id}
+      .distance=${-4}
+      .content=${this.hass.localize("ui.panel.config.devices.cant_edit")}
+    >
       <a
         href=${ifDefined(
           entityState.attributes.id
@@ -577,14 +588,7 @@ class HaConfigAreaPage extends LitElement {
           <ha-icon-next slot="meta"></ha-icon-next>
         </ha-list-item>
       </a>
-      ${!entityState.attributes.id
-        ? html`
-            <simple-tooltip animation-delay="0">
-              ${this.hass.localize("ui.panel.config.devices.cant_edit")}
-            </simple-tooltip>
-          `
-        : ""}
-    </div>`;
+    </ha-tooltip>`;
   }
 
   private _renderScript(name: string, entityState: ScriptEntity) {

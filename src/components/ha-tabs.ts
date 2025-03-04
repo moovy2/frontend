@@ -3,8 +3,9 @@ import type { PaperTabElement } from "@polymer/paper-tabs/paper-tab";
 import "@polymer/paper-tabs/paper-tabs";
 import type { PaperTabsElement } from "@polymer/paper-tabs/paper-tabs";
 import { customElement } from "lit/decorators";
-import { Constructor } from "../types";
+import type { Constructor } from "../types";
 
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const PaperTabs = customElements.get(
   "paper-tabs"
 ) as Constructor<PaperTabsElement>;
@@ -18,6 +19,8 @@ export class HaTabs extends PaperTabs {
   private _lastTabWidth = 0;
 
   private _lastLeftHiddenState = false;
+
+  private _lastRightHiddenState = false;
 
   static get template(): HTMLTemplateElement {
     if (!subTemplate) {
@@ -53,6 +56,7 @@ export class HaTabs extends PaperTabs {
   }
 
   // Get first and last tab's width for _affectScroll
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   public _tabChanged(tab: PaperTabElement, old: PaperTabElement): void {
     super._tabChanged(tab, old);
     const tabs = this.querySelectorAll("paper-tab:not(.hide-tab)");
@@ -74,6 +78,7 @@ export class HaTabs extends PaperTabs {
    * while scrolling and the tab container shrinks we can counteract
    * the jump in tab position so that the scroll still appears smooth.
    */
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   public _affectScroll(dx: number): void {
     if (this._firstTabWidth === 0 || this._lastTabWidth === 0) {
       return;
@@ -82,14 +87,23 @@ export class HaTabs extends PaperTabs {
     this.$.tabsContainer.scrollLeft += dx;
 
     const scrollLeft = this.$.tabsContainer.scrollLeft;
+    const dirRTL = this.dir === "rtl";
 
-    this._leftHidden = scrollLeft - this._firstTabWidth < 0;
-    this._rightHidden =
-      scrollLeft + this._lastTabWidth > this._tabContainerScrollSize;
+    const boolCondition1 = Math.abs(scrollLeft) < this._firstTabWidth;
+    const boolCondition2 =
+      Math.abs(scrollLeft) + this._lastTabWidth > this._tabContainerScrollSize;
 
-    if (this._lastLeftHiddenState !== this._leftHidden) {
-      this._lastLeftHiddenState = this._leftHidden;
-      this.$.tabsContainer.scrollLeft += this._leftHidden ? -23 : 23;
+    this._leftHidden = !dirRTL ? boolCondition1 : boolCondition2;
+    this._rightHidden = !dirRTL ? boolCondition2 : boolCondition1;
+
+    if (!dirRTL) {
+      if (this._lastLeftHiddenState !== this._leftHidden) {
+        this._lastLeftHiddenState = this._leftHidden;
+        this.$.tabsContainer.scrollLeft += this._leftHidden ? -23 : 23;
+      }
+    } else if (this._lastRightHiddenState !== this._rightHidden) {
+      this._lastRightHiddenState = this._rightHidden;
+      this.$.tabsContainer.scrollLeft -= this._rightHidden ? -23 : 23;
     }
   }
 }
