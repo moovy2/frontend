@@ -1,4 +1,5 @@
-import { CSSResultGroup, html, LitElement, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import {
   assert,
@@ -31,6 +32,12 @@ const cardConfigStruct = assign(
     detail: optional(number()),
     theme: optional(string()),
     hours_to_show: optional(number()),
+    limits: optional(
+      object({
+        min: optional(number()),
+        max: optional(number()),
+      })
+    ),
   })
 );
 
@@ -79,6 +86,20 @@ const SCHEMA = [
         name: "hours_to_show",
         default: DEFAULT_HOURS_TO_SHOW,
         selector: { number: { min: 1, mode: "box" } },
+      },
+    ],
+  },
+  {
+    type: "grid",
+    name: "limits",
+    schema: [
+      {
+        name: "min",
+        selector: { number: { mode: "box" } },
+      },
+      {
+        name: "max",
+        selector: { number: { mode: "box" } },
       },
     ],
   },
@@ -141,6 +162,14 @@ export class HuiSensorCardEditor
       case "graph":
         return this.hass!.localize(
           "ui.panel.lovelace.editor.card.sensor.graph_type"
+        );
+      case "min":
+        return this.hass!.localize(
+          "ui.panel.lovelace.editor.card.sensor.limit_min"
+        );
+      case "max":
+        return this.hass!.localize(
+          "ui.panel.lovelace.editor.card.sensor.limit_max"
         );
       default:
         return this.hass!.localize(

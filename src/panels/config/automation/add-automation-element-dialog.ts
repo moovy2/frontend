@@ -1,16 +1,8 @@
-import "@material/mwc-list/mwc-list";
-import "@material/web/divider/divider";
 import { mdiClose, mdiContentPaste, mdiPlus } from "@mdi/js";
-import Fuse, { IFuseOptions } from "fuse.js";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { IFuseOptions } from "fuse.js";
+import Fuse from "fuse.js";
+import type { CSSResultGroup, PropertyValues, TemplateResult } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
 import { repeat } from "lit/directives/repeat";
@@ -19,7 +11,7 @@ import memoizeOne from "memoize-one";
 import { fireEvent } from "../../../common/dom/fire_event";
 import { computeDomain } from "../../../common/entity/compute_domain";
 import { stringCompare } from "../../../common/string/compare";
-import { LocalizeFunc } from "../../../common/translations/localize";
+import type { LocalizeFunc } from "../../../common/translations/localize";
 import { deepEqual } from "../../../common/util/deep-equal";
 import "../../../components/ha-dialog";
 import type { HaDialog } from "../../../components/ha-dialog";
@@ -28,8 +20,9 @@ import "../../../components/ha-domain-icon";
 import "../../../components/ha-icon-button";
 import "../../../components/ha-icon-button-prev";
 import "../../../components/ha-icon-next";
-import "../../../components/ha-list-item-new";
-import "../../../components/ha-list-new";
+import "../../../components/ha-md-divider";
+import "../../../components/ha-md-list";
+import "../../../components/ha-md-list-item";
 import "../../../components/ha-service-icon";
 import "../../../components/search-input";
 import {
@@ -39,22 +32,20 @@ import {
   getService,
   isService,
 } from "../../../data/action";
-import { AutomationElementGroup } from "../../../data/automation";
+import type { AutomationElementGroup } from "../../../data/automation";
 import { CONDITION_GROUPS, CONDITION_ICONS } from "../../../data/condition";
 import { getServiceIcons } from "../../../data/icons";
+import type { IntegrationManifest } from "../../../data/integration";
 import {
-  IntegrationManifest,
   domainToName,
   fetchIntegrationManifests,
 } from "../../../data/integration";
 import { TRIGGER_GROUPS, TRIGGER_ICONS } from "../../../data/trigger";
-import { HassDialog } from "../../../dialogs/make-dialog-manager";
+import type { HassDialog } from "../../../dialogs/make-dialog-manager";
 import { haStyle, haStyleDialog } from "../../../resources/styles";
-import { HomeAssistant } from "../../../types";
-import {
-  AddAutomationElementDialogParams,
-  PASTE_VALUE,
-} from "./show-add-automation-element-dialog";
+import type { HomeAssistant } from "../../../types";
+import type { AddAutomationElementDialogParams } from "./show-add-automation-element-dialog";
+import { PASTE_VALUE } from "./show-add-automation-element-dialog";
 
 const TYPES = {
   trigger: { groups: TRIGGER_GROUPS, icons: TRIGGER_ICONS },
@@ -77,9 +68,7 @@ interface ListItem {
   group: boolean;
 }
 
-interface DomainManifestLookup {
-  [domain: string]: IntegrationManifest;
-}
+type DomainManifestLookup = Record<string, IntegrationManifest>;
 
 const ENTITY_DOMAINS_OTHER = new Set([
   "date",
@@ -133,7 +122,7 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
     ).matches;
   }
 
-  public closeDialog(): void {
+  public closeDialog() {
     if (this._params) {
       fireEvent(this, "dialog-closed", { dialog: this.localName });
     }
@@ -145,6 +134,7 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
     this._filter = "";
     this._manifests = undefined;
     this._domains = undefined;
+    return true;
   }
 
   private _getGroups = (
@@ -207,8 +197,10 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
       const options: IFuseOptions<ListItem> = {
         keys: ["key", "name", "description"],
         isCaseSensitive: false,
+        ignoreLocation: true,
         minMatchCharLength: Math.min(filter.length, 2),
         threshold: 0.2,
+        ignoreDiacritics: true,
       };
       const fuse = new Fuse(items, options);
       return fuse.search(filter).map((result) => result.item);
@@ -323,7 +315,7 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
             <ha-domain-icon
               .hass=${this.hass}
               .domain=${domain}
-              brandFallback
+              brand-fallback
             ></ha-domain-icon>
           `,
           key: `${SERVICE_PREFIX}${domain}`,
@@ -375,7 +367,7 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
             }`,
             description:
               this.hass.localize(
-                `component.${domain}.services.${service}.description`
+                `component.${dmn}.services.${service}.description`
               ) || services[dmn][service]?.description,
           });
         }
@@ -432,7 +424,7 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
   protected _opened(): void {
     // Store the width and height so that when we search, box doesn't jump
     const boundingRect =
-      this.shadowRoot!.querySelector("ha-list-new")?.getBoundingClientRect();
+      this.shadowRoot!.querySelector("ha-md-list")?.getBoundingClientRect();
     this._width = boundingRect?.width;
     this._height = boundingRect?.height;
   }
@@ -524,7 +516,7 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
                 )}
           ></search-input>
         </div>
-        <ha-list-new
+        <ha-md-list
           dialogInitialFocus=${ifDefined(this._fullScreen ? "" : undefined)}
           style=${styleMap({
             width: this._width ? `${this._width}px` : "auto",
@@ -535,7 +527,7 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
           !this._filter &&
           (!this._group ||
             items.find((item) => item.key === this._params!.clipboardItem))
-            ? html`<ha-list-item-new
+            ? html`<ha-md-list-item
                   interactive
                   type="button"
                   class="paste"
@@ -556,14 +548,14 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
                     .path=${mdiContentPaste}
                   ></ha-svg-icon
                   ><ha-svg-icon slot="end" .path=${mdiPlus}></ha-svg-icon>
-                </ha-list-item-new>
-                <md-divider></md-divider>`
+                </ha-md-list-item>
+                <ha-md-divider role="separator" tabindex="-1"></ha-md-divider>`
             : ""}
           ${repeat(
             items,
             (item) => item.key,
             (item) => html`
-              <ha-list-item-new
+              <ha-md-list-item
                 interactive
                 type="button"
                 .value=${item.key}
@@ -586,10 +578,10 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
                       slot="end"
                       .path=${mdiPlus}
                     ></ha-svg-icon>`}
-              </ha-list-item-new>
+              </ha-md-list-item>
             `
           )}
-        </ha-list-new>
+        </ha-md-list>
       </ha-dialog>
     `;
   }
@@ -641,13 +633,13 @@ class DialogAddAutomationElement extends LitElement implements HassDialog {
         ha-icon-next {
           width: 24px;
         }
-        ha-list-new {
+        ha-md-list {
           max-height: 468px;
           max-width: 100vw;
           --md-list-item-leading-space: 24px;
           --md-list-item-trailing-space: 24px;
         }
-        ha-list-item-new img {
+        ha-md-list-item img {
           width: 24px;
         }
         search-input {

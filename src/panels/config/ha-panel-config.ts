@@ -9,6 +9,7 @@ import {
   mdiDevices,
   mdiInformation,
   mdiInformationOutline,
+  mdiLabel,
   mdiLightningBolt,
   mdiMapMarkerRadius,
   mdiMathLog,
@@ -28,22 +29,25 @@ import {
   mdiUpdate,
   mdiViewDashboard,
 } from "@mdi/js";
-import { UnsubscribeFunc } from "home-assistant-js-websocket";
-import { PropertyValues } from "lit";
+import type { UnsubscribeFunc } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { isComponentLoaded } from "../../common/config/is_component_loaded";
 import { listenMediaQuery } from "../../common/dom/media_query";
-import { CloudStatus, fetchCloudStatus } from "../../data/cloud";
-import { fullEntitiesContext } from "../../data/context";
+import type { CloudStatus } from "../../data/cloud";
+import { fetchCloudStatus } from "../../data/cloud";
+import { fullEntitiesContext, labelsContext } from "../../data/context";
 import {
   entityRegistryByEntityId,
   entityRegistryById,
   subscribeEntityRegistry,
 } from "../../data/entity_registry";
-import { HassRouterPage, RouterOptions } from "../../layouts/hass-router-page";
-import { PageNavigation } from "../../layouts/hass-tabs-subpage";
+import { subscribeLabelRegistry } from "../../data/label_registry";
+import type { RouterOptions } from "../../layouts/hass-router-page";
+import { HassRouterPage } from "../../layouts/hass-router-page";
+import type { PageNavigation } from "../../layouts/hass-tabs-subpage";
 import { SubscribeMixin } from "../../mixins/subscribe-mixin";
-import { HomeAssistant, Route } from "../../types";
+import type { HomeAssistant, Route } from "../../types";
 
 declare global {
   // for fire event
@@ -53,7 +57,7 @@ declare global {
   }
 }
 
-export const configSections: { [name: string]: PageNavigation[] } = {
+export const configSections: Record<string, PageNavigation[]> = {
   dashboard: [
     {
       path: "/config/integrations",
@@ -268,6 +272,14 @@ export const configSections: { [name: string]: PageNavigation[] } = {
       core: true,
     },
     {
+      component: "labels",
+      path: "/config/labels",
+      translationKey: "ui.panel.config.labels.caption",
+      iconPath: mdiLabel,
+      iconColor: "#2D338F",
+      core: true,
+    },
+    {
       component: "zone",
       path: "/config/zone",
       translationKey: "ui.panel.config.zone.caption",
@@ -309,14 +321,6 @@ export const configSections: { [name: string]: PageNavigation[] } = {
       iconPath: mdiBackupRestore,
       iconColor: "#0D47A1",
       component: "backup",
-      not_component: "hassio",
-    },
-    {
-      path: "/hassio/backups",
-      translationKey: "backup",
-      iconPath: mdiBackupRestore,
-      iconColor: "#0D47A1",
-      component: "hassio",
     },
     {
       path: "/config/analytics",
@@ -370,10 +374,18 @@ class HaPanelConfig extends SubscribeMixin(HassRouterPage) {
     initialValue: [],
   });
 
+  private _labelsContext = new ContextProvider(this, {
+    context: labelsContext,
+    initialValue: [],
+  });
+
   public hassSubscribe(): UnsubscribeFunc[] {
     return [
       subscribeEntityRegistry(this.hass.connection!, (entities) => {
         this._entitiesContext.setValue(entities);
+      }),
+      subscribeLabelRegistry(this.hass.connection!, (labels) => {
+        this._labelsContext.setValue(labels);
       }),
     ];
   }
@@ -450,6 +462,10 @@ class HaPanelConfig extends SubscribeMixin(HassRouterPage) {
       integrations: {
         tag: "ha-config-integrations",
         load: () => import("./integrations/ha-config-integrations"),
+      },
+      labels: {
+        tag: "ha-config-labels",
+        load: () => import("./labels/ha-config-labels"),
       },
       lovelace: {
         tag: "ha-config-lovelace",
@@ -532,6 +548,13 @@ class HaPanelConfig extends SubscribeMixin(HassRouterPage) {
             "./integrations/integration-panels/thread/thread-config-panel"
           ),
       },
+      bluetooth: {
+        tag: "bluetooth-config-dashboard-router",
+        load: () =>
+          import(
+            "./integrations/integration-panels/bluetooth/bluetooth-config-dashboard-router"
+          ),
+      },
       application_credentials: {
         tag: "ha-config-application-credentials",
         load: () =>
@@ -546,7 +569,7 @@ class HaPanelConfig extends SubscribeMixin(HassRouterPage) {
 
   @state() private _cloudStatus?: CloudStatus;
 
-  private _listeners: Array<() => void> = [];
+  private _listeners: (() => void)[] = [];
 
   public connectedCallback() {
     super.connectedCallback();

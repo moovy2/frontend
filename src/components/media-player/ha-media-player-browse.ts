@@ -4,16 +4,8 @@ import "@material/mwc-button/mwc-button";
 import "@material/mwc-list/mwc-list";
 import "@material/mwc-list/mwc-list-item";
 import { mdiArrowUpRight, mdiPlay, mdiPlus } from "@mdi/js";
-import "@lrnwebcomponents/simple-tooltip/simple-tooltip";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import {
   customElement,
   eventOptions,
@@ -27,19 +19,20 @@ import { until } from "lit/directives/until";
 import { fireEvent } from "../../common/dom/fire_event";
 import { debounce } from "../../common/util/debounce";
 import { isUnavailableState } from "../../data/entity";
-import type { MediaPlayerItem } from "../../data/media-player";
-import {
-  browseMediaPlayer,
-  BROWSER_PLAYER,
-  MediaClassBrowserSettings,
+import type {
+  MediaPlayerItem,
   MediaPickedEvent,
   MediaPlayerBrowseAction,
   MediaPlayerLayoutType,
 } from "../../data/media-player";
+import {
+  browseMediaPlayer,
+  BROWSER_PLAYER,
+  MediaClassBrowserSettings,
+} from "../../data/media-player";
 import { browseLocalMediaPlayer } from "../../data/media_source";
 import { isTTSMediaSource } from "../../data/tts";
 import { showAlertDialog } from "../../dialogs/generic/show-dialog-box";
-import { loadPolyfillIfNeeded } from "../../resources/resize-observer.polyfill";
 import { haStyle } from "../../resources/styles";
 import type { HomeAssistant } from "../../types";
 import {
@@ -56,6 +49,7 @@ import "../ha-circular-progress";
 import "../ha-fab";
 import "../ha-icon-button";
 import "../ha-svg-icon";
+import "../ha-tooltip";
 import "./ha-browse-media-tts";
 import type { TtsMediaPickedEvent } from "./ha-browse-media-tts";
 import { loadVirtualizer } from "../../resources/virtualizer";
@@ -83,11 +77,12 @@ export interface MediaPlayerItemId {
 export class HaMediaPlayerBrowse extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public entityId!: string;
+  @property({ attribute: false }) public entityId!: string;
 
   @property() public action: MediaPlayerBrowseAction = "play";
 
-  @property() public preferredLayout: MediaPlayerLayoutType = "auto";
+  @property({ attribute: false })
+  public preferredLayout: MediaPlayerLayoutType = "auto";
 
   @property({ type: Boolean }) public dialog = false;
 
@@ -608,12 +603,9 @@ export class HaMediaPlayerBrowse extends LitElement {
                 `
               : ""}
           </div>
-          <div class="title">
-            ${child.title}
-            <simple-tooltip fitToVisibleBounds position="top" offset="4"
-              >${child.title}</simple-tooltip
-            >
-          </div>
+          <ha-tooltip distance="-4" .content=${child.title}>
+            <div class="title">${child.title}</div>
+          </ha-tooltip>
         </ha-card>
       </div>
     `;
@@ -770,7 +762,6 @@ export class HaMediaPlayerBrowse extends LitElement {
 
   private async _attachResizeObserver(): Promise<void> {
     if (!this._resizeObserver) {
-      await loadPolyfillIfNeeded();
       this._resizeObserver = new ResizeObserver(
         debounce(() => this._measureCard(), 250, false)
       );
@@ -1112,7 +1103,7 @@ export class HaMediaPlayerBrowse extends LitElement {
           position: absolute;
           transition: color 0.5s;
           border-radius: 50%;
-          top: calc(50% - 50px);
+          top: calc(50% - 40px);
           right: calc(50% - 35px);
           opacity: 0;
           transition: opacity 0.1s ease-out;
@@ -1121,14 +1112,17 @@ export class HaMediaPlayerBrowse extends LitElement {
         .child .play:not(.can_expand) {
           --mdc-icon-button-size: 70px;
           --mdc-icon-size: 48px;
+          background-color: var(--primary-color);
+          color: var(--text-primary-color);
+        }
+
+        ha-card:hover .image {
+          filter: brightness(70%);
+          transition: filter 0.5s;
         }
 
         ha-card:hover .play {
           opacity: 1;
-        }
-
-        ha-card:hover .play:not(.can_expand) {
-          color: var(--primary-color);
         }
 
         ha-card:hover .play.can_expand {
@@ -1143,10 +1137,6 @@ export class HaMediaPlayerBrowse extends LitElement {
           transition:
             bottom 0.1s ease-out,
             opacity 0.1s ease-out;
-        }
-
-        .child .play:hover {
-          color: var(--primary-color);
         }
 
         .child .title {

@@ -1,12 +1,14 @@
 import "@material/mwc-button";
-import { CSSResultGroup, LitElement, TemplateResult, css, html } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators";
-import { HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity } from "home-assistant-js-websocket";
 import { haStyle } from "../resources/styles";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 
-const STATES_INTERCEPTABLE: {
-  [state: string]: {
+const STATES_INTERCEPTABLE: Record<
+  string,
+  {
     action:
       | "return_to_base"
       | "start_cleaning"
@@ -14,8 +16,8 @@ const STATES_INTERCEPTABLE: {
       | "turn_off"
       | "resume_cleaning";
     service: string;
-  };
-} = {
+  }
+> = {
   cleaning: {
     action: "return_to_base",
     service: "return_to_base",

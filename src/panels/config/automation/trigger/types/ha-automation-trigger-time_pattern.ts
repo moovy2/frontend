@@ -21,8 +21,8 @@ export class HaTimePatternTrigger extends LitElement implements TriggerElement {
 
   @property({ type: Boolean }) public disabled = false;
 
-  public static get defaultConfig() {
-    return {};
+  public static get defaultConfig(): TimePatternTrigger {
+    return { trigger: "time_pattern" };
   }
 
   protected render() {
@@ -33,6 +33,7 @@ export class HaTimePatternTrigger extends LitElement implements TriggerElement {
         .data=${this.trigger}
         .disabled=${this.disabled}
         .computeLabel=${this._computeLabelCallback}
+        .computeHelper=${this._computeHelperCallback}
         @value-changed=${this._valueChanged}
       ></ha-form>
     `;
@@ -49,6 +50,13 @@ export class HaTimePatternTrigger extends LitElement implements TriggerElement {
   ): string =>
     this.hass.localize(
       `ui.panel.config.automation.editor.triggers.type.time_pattern.${schema.name}`
+    );
+
+  private _computeHelperCallback = (
+    _schema: SchemaUnion<typeof SCHEMA>
+  ): string =>
+    this.hass.localize(
+      `ui.panel.config.automation.editor.triggers.type.time_pattern.help`
     );
 }
 

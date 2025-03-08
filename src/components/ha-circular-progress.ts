@@ -1,6 +1,6 @@
-import "element-internals-polyfill";
 import { MdCircularProgress } from "@material/web/progress/circular-progress";
-import { CSSResult, PropertyValues, css } from "lit";
+import type { PropertyValues } from "lit";
+import { css } from "lit";
 import { customElement, property } from "lit/decorators";
 
 @customElement("ha-circular-progress")
@@ -8,7 +8,7 @@ export class HaCircularProgress extends MdCircularProgress {
   @property({ attribute: "aria-label", type: String }) public ariaLabel =
     "Loading";
 
-  @property() public size: "tiny" | "small" | "medium" | "large" = "medium";
+  @property() public size?: "tiny" | "small" | "medium" | "large";
 
   protected updated(changedProps: PropertyValues) {
     super.updated(changedProps);
@@ -21,7 +21,6 @@ export class HaCircularProgress extends MdCircularProgress {
         case "small":
           this.style.setProperty("--md-circular-progress-size", "28px");
           break;
-        // medium is default size
         case "medium":
           this.style.setProperty("--md-circular-progress-size", "48px");
           break;
@@ -32,17 +31,15 @@ export class HaCircularProgress extends MdCircularProgress {
     }
   }
 
-  static get styles(): CSSResult[] {
-    return [
-      ...super.styles,
-      css`
-        :host {
-          --md-sys-color-primary: var(--primary-color);
-          --md-circular-progress-size: 48px;
-        }
-      `,
-    ];
-  }
+  static override styles = [
+    ...super.styles,
+    css`
+      :host {
+        --md-sys-color-primary: var(--primary-color);
+        --md-circular-progress-size: 48px;
+      }
+    `,
+  ];
 }
 
 declare global {

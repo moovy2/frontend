@@ -6,14 +6,8 @@ import {
   mdiMapMarker,
   mdiMapSearchOutline,
 } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  TemplateResult,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../common/dom/fire_event";
@@ -30,18 +24,16 @@ import type {
   HaLocationsEditor,
   MarkerLocation,
 } from "../components/map/ha-locations-editor";
-import { ConfigUpdateValues, detectCoreConfig } from "../data/core";
-import {
-  OpenStreetMapPlace,
-  reverseGeocode,
-  searchPlaces,
-} from "../data/openstreetmap";
+import type { ConfigUpdateValues } from "../data/core";
+import { detectCoreConfig } from "../data/core";
+import type { OpenStreetMapPlace } from "../data/openstreetmap";
+import { reverseGeocode, searchPlaces } from "../data/openstreetmap";
 import { showConfirmationDialog } from "../dialogs/generic/show-dialog-box";
 import type { HomeAssistant } from "../types";
 import { onBoardingStyles } from "./styles";
 
 const AMSTERDAM: [number, number] = [52.3731339, 4.8903147];
-const mql = matchMedia("(prefers-color-scheme: dark)");
+const darkMql = matchMedia("(prefers-color-scheme: dark)");
 const LOCATION_MARKER_ID = "location";
 
 @customElement("onboarding-location")
@@ -199,7 +191,7 @@ class OnboardingLocation extends LitElement {
           this._highlightedMarker
         )}
         zoom="14"
-        .darkMode=${mql.matches}
+        .themeMode=${darkMql.matches ? "dark" : "light"}
         .disabled=${this._working}
         @location-updated=${this._locationChanged}
         @marker-clicked=${this._markerClicked}

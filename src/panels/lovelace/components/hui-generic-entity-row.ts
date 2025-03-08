@@ -1,11 +1,5 @@
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { ifDefined } from "lit/directives/if-defined";
@@ -15,12 +9,12 @@ import { computeDomain } from "../../../common/entity/compute_domain";
 import { computeStateName } from "../../../common/entity/compute_state_name";
 import "../../../components/entity/state-badge";
 import "../../../components/ha-relative-time";
-import { ActionHandlerEvent } from "../../../data/lovelace/action_handler";
-import { HomeAssistant } from "../../../types";
-import { EntitiesCardEntityConfig } from "../cards/types";
+import type { ActionHandlerEvent } from "../../../data/lovelace/action_handler";
+import type { HomeAssistant } from "../../../types";
+import type { EntitiesCardEntityConfig } from "../cards/types";
 import { actionHandler } from "../common/directives/action-handler-directive";
 import { handleAction } from "../common/handle-action";
-import { hasAction } from "../common/has-action";
+import { hasAction, hasAnyAction } from "../common/has-action";
 import { createEntityNotFoundWarning } from "./hui-warning";
 
 @customElement("hui-generic-entity-row")
@@ -29,16 +23,17 @@ export class HuiGenericEntityRow extends LitElement {
 
   @property({ attribute: false }) public config?: EntitiesCardEntityConfig;
 
-  @property() public secondaryText?: string;
+  @property({ attribute: "secondary-text" }) public secondaryText?: string;
 
-  @property({ type: Boolean }) public hideName = false;
+  @property({ attribute: "hide-name", type: Boolean }) public hideName = false;
 
   // Allows to control if this row should capture the user interaction, e.g. with its
   // toggle switch, button or input field. Some domains dynamically decide what to show
   // => static determination will not work => the caller has to pass the desired value in.
   // Same applies for custom components that want to override the default behavior.
   // Default behavior is controlled by DOMAINS_INPUT_ROW.
-  @property({ type: Boolean }) public catchInteraction?;
+  @property({ attribute: "catch-interaction", type: Boolean })
+  public catchInteraction?;
 
   protected render() {
     if (!this.hass || !this.config) {
@@ -60,9 +55,7 @@ export class HuiGenericEntityRow extends LitElement {
     // By default, we always show a pointer, since if there is no explicit configuration provided,
     // the frontend always assumes "more-info" in the action handler. We only need to hide the pointer
     // if the tap action is explicitly set to "none".
-    const pointer = !(
-      this.config.tap_action && this.config.tap_action.action === "none"
-    );
+    const pointer = hasAnyAction(this.config);
 
     const hasSecondary = this.secondaryText || this.config.secondary_info;
     const name = this.config.name ?? computeStateName(stateObj);
@@ -82,7 +75,11 @@ export class HuiGenericEntityRow extends LitElement {
           hasHold: hasAction(this.config!.hold_action),
           hasDoubleClick: hasAction(this.config!.double_tap_action),
         })}
-        tabindex=${ifDefined(pointer ? "0" : undefined)}
+        tabindex=${ifDefined(
+          !this.config.tap_action || hasAction(this.config.tap_action)
+            ? "0"
+            : undefined
+        )}
       ></state-badge>
       ${!this.hideName
         ? html`<div
@@ -161,7 +158,7 @@ export class HuiGenericEntityRow extends LitElement {
               : ""}
           </div>`
         : nothing}
-      ${this.catchInteraction ?? !DOMAINS_INPUT_ROW.includes(domain)
+      ${(this.catchInteraction ?? !DOMAINS_INPUT_ROW.includes(domain))
         ? html`<div
             class="text-content value ${classMap({
               pointer,
@@ -191,55 +188,53 @@ export class HuiGenericEntityRow extends LitElement {
     handleAction(this, this.hass!, this.config!, ev.detail.action!);
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: flex;
-        align-items: center;
-        flex-direction: row;
-      }
-      .info {
-        margin-left: 16px;
-        margin-right: 8px;
-        margin-inline-start: 16px;
-        margin-inline-end: 8px;
-        flex: 1 1 30%;
-      }
-      .info,
-      .info > * {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .flex ::slotted(*) {
-        margin-left: 8px;
-        margin-inline-start: 8px;
-        margin-inline-end: initial;
-        min-width: 0;
-      }
-      .flex ::slotted([slot="secondary"]) {
-        margin-left: 0;
-        margin-inline-start: 0;
-        margin-inline-end: initial;
-      }
-      .secondary,
-      ha-relative-time {
-        color: var(--secondary-text-color);
-      }
-      state-badge {
-        flex: 0 0 40px;
-      }
-      .pointer {
-        cursor: pointer;
-      }
-      .state {
-        text-align: var(--float-end);
-      }
-      .value {
-        direction: ltr;
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      display: flex;
+      align-items: center;
+      flex-direction: row;
+    }
+    .info {
+      padding-left: 16px;
+      padding-right: 8px;
+      padding-inline-start: 16px;
+      padding-inline-end: 8px;
+      flex: 1 1 30%;
+    }
+    .info,
+    .info > * {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .flex ::slotted(*) {
+      margin-left: 8px;
+      margin-inline-start: 8px;
+      margin-inline-end: initial;
+      min-width: 0;
+    }
+    .flex ::slotted([slot="secondary"]) {
+      margin-left: 0;
+      margin-inline-start: 0;
+      margin-inline-end: initial;
+    }
+    .secondary,
+    ha-relative-time {
+      color: var(--secondary-text-color);
+    }
+    state-badge {
+      flex: 0 0 40px;
+    }
+    .pointer {
+      cursor: pointer;
+    }
+    .state {
+      text-align: var(--float-end);
+    }
+    .value {
+      direction: ltr;
+    }
+  `;
 }
 
 declare global {

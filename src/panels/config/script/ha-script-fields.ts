@@ -1,20 +1,14 @@
 import "@material/mwc-button";
 import { mdiPlus } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "../../../common/dom/fire_event";
 import "../../../components/ha-button";
 import "../../../components/ha-button-menu";
 import "../../../components/ha-svg-icon";
-import { Fields } from "../../../data/script";
-import { HomeAssistant } from "../../../types";
+import type { Fields } from "../../../data/script";
+import type { HomeAssistant } from "../../../types";
 import "./ha-script-field-row";
 import type HaScriptFieldRow from "./ha-script-field-row";
 
@@ -140,18 +134,16 @@ export default class HaScriptFields extends LitElement {
     return key;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-script-field-row {
-        display: block;
-        margin-bottom: 16px;
-        scroll-margin-top: 48px;
-      }
-      ha-svg-icon {
-        height: 20px;
-      }
-    `;
-  }
+  static styles = css`
+    ha-script-field-row {
+      display: block;
+      margin-bottom: 16px;
+      scroll-margin-top: 48px;
+    }
+    ha-svg-icon {
+      height: 20px;
+    }
+  `;
 }
 
 declare global {

@@ -1,4 +1,5 @@
-import { LitElement, TemplateResult, css, html } from "lit";
+import type { TemplateResult } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, state } from "lit/decorators";
 import "../../../../src/components/ha-card";
 import "../../../../src/components/ha-control-number-buttons";
@@ -72,32 +73,30 @@ export class DemoHarControlNumberButtons extends LitElement {
     `;
   }
 
-  static get styles() {
-    return css`
-      ha-card {
-        max-width: 600px;
-        margin: 24px auto;
-      }
-      pre {
-        margin-top: 0;
-        margin-bottom: 8px;
-      }
-      p {
-        margin: 0;
-      }
-      label {
-        font-weight: 600;
-      }
-      .custom {
-        color: #2196f3;
-        --control-number-buttons-color: #2196f3;
-        --control-number-buttons-background-color: #2196f3;
-        --control-number-buttons-background-opacity: 0.1;
-        --control-number-buttons-thickness: 100px;
-        --control-number-buttons-border-radius: 24px;
-      }
-    `;
-  }
+  static styles = css`
+    ha-card {
+      max-width: 600px;
+      margin: 24px auto;
+    }
+    pre {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    p {
+      margin: 0;
+    }
+    label {
+      font-weight: 600;
+    }
+    .custom {
+      color: #2196f3;
+      --control-number-buttons-color: #2196f3;
+      --control-number-buttons-background-color: #2196f3;
+      --control-number-buttons-background-opacity: 0.1;
+      --control-number-buttons-thickness: 100px;
+      --control-number-buttons-border-radius: 36px;
+    }
+  `;
 }
 
 declare global {

@@ -1,22 +1,16 @@
 import "@material/mwc-button/mwc-button";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  PropertyValues,
-  nothing,
-} from "lit";
+import type { PropertyValues } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
-import { CastManager } from "../../../cast/cast_manager";
+import type { CastManager } from "../../../cast/cast_manager";
 import {
   castSendShowLovelaceView,
   ensureConnectedCastSession,
 } from "../../../cast/receiver_messages";
 import "../../../components/ha-icon";
-import { HomeAssistant } from "../../../types";
-import { CastConfig, LovelaceRow } from "../entity-rows/types";
+import type { HomeAssistant } from "../../../types";
+import type { CastConfig, LovelaceRow } from "../entity-rows/types";
 
 @customElement("hui-cast-row")
 class HuiCastRow extends LitElement implements LovelaceRow {
@@ -125,48 +119,46 @@ class HuiCastRow extends LitElement implements LovelaceRow {
     );
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: flex;
-        align-items: center;
-      }
-      ha-icon {
-        padding: 8px;
-        color: var(--paper-item-icon-color);
-      }
-      .flex {
-        flex: 1;
-        margin-left: 16px;
-        margin-inline-start: 16px;
-        margin-inline-end: initial;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .name {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .controls {
-        display: flex;
-        align-items: center;
-      }
-      google-cast-launcher {
-        margin-right: 0.57em;
-        margin-inline-end: -0.57em;
-        margin-inline-start: initial;
-        cursor: pointer;
-        display: inline-block;
-        height: 24px;
-        width: 24px;
-      }
-      .inactive {
-        padding: 0 4px;
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      display: flex;
+      align-items: center;
+    }
+    ha-icon {
+      padding: 8px;
+      color: var(--paper-item-icon-color);
+    }
+    .flex {
+      flex: 1;
+      margin-left: 16px;
+      margin-inline-start: 16px;
+      margin-inline-end: initial;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+    }
+    google-cast-launcher {
+      margin-right: 0.57em;
+      margin-inline-end: -0.57em;
+      margin-inline-start: initial;
+      cursor: pointer;
+      display: inline-block;
+      height: 24px;
+      width: 24px;
+    }
+    .inactive {
+      padding: 0 4px;
+    }
+  `;
 }
 
 declare global {

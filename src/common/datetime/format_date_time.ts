@@ -1,7 +1,6 @@
-import { HassConfig } from "home-assistant-js-websocket";
+import type { HassConfig } from "home-assistant-js-websocket";
 import memoizeOne from "memoize-one";
-import { FrontendLocaleData } from "../../data/translation";
-import "../../resources/intl-polyfill";
+import type { FrontendLocaleData } from "../../data/translation";
 import { formatDateNumeric } from "./format_date";
 import { formatTime } from "./format_time";
 import { resolveTimeZone } from "./resolve-time-zone";
@@ -24,6 +23,20 @@ const formatDateTimeMem = memoizeOne(
       minute: "2-digit",
       hourCycle: useAmPm(locale) ? "h12" : "h23",
       timeZone: resolveTimeZone(locale.time_zone, serverTimeZone),
+    })
+);
+
+export const formatDateTimeWithBrowserDefaults = (dateObj: Date) =>
+  formatDateTimeWithBrowserDefaultsMem().format(dateObj);
+
+const formatDateTimeWithBrowserDefaultsMem = memoizeOne(
+  () =>
+    new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })
 );
 
@@ -65,6 +78,18 @@ const formatShortDateTimeMem = memoizeOne(
       timeZone: resolveTimeZone(locale.time_zone, serverTimeZone),
     })
 );
+
+export const formatShortDateTimeWithConditionalYear = (
+  dateObj: Date,
+  locale: FrontendLocaleData,
+  config: HassConfig
+) => {
+  const now = new Date();
+  if (now.getFullYear() === dateObj.getFullYear()) {
+    return formatShortDateTime(dateObj, locale, config);
+  }
+  return formatShortDateTimeWithYear(dateObj, locale, config);
+};
 
 // August 9, 2021, 8:23:15 AM
 export const formatDateTimeWithSeconds = (

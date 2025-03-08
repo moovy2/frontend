@@ -1,4 +1,4 @@
-import { AutomationConfig } from "../data/automation";
+import type { AutomationConfig } from "../data/automation";
 
 const CALLBACK_EXTERNAL_BUS = "externalBus";
 
@@ -37,9 +37,11 @@ interface EMOutgoingMessageConfigGet extends EMMessage {
 
 interface EMOutgoingMessageBarCodeScan extends EMMessage {
   type: "bar_code/scan";
-  title: string;
-  description: string;
-  alternative_option_label?: string;
+  payload: {
+    title: string;
+    description: string;
+    alternative_option_label?: string;
+  };
 }
 
 interface EMOutgoingMessageBarCodeClose extends EMMessage {
@@ -48,23 +50,31 @@ interface EMOutgoingMessageBarCodeClose extends EMMessage {
 
 interface EMOutgoingMessageBarCodeNotify extends EMMessage {
   type: "bar_code/notify";
-  message: string;
+  payload: {
+    message: string;
+  };
 }
 
 interface EMOutgoingMessageMatterCommission extends EMMessage {
   type: "matter/commission";
+  payload?: {
+    mac_extended_address: string | null;
+    extended_pan_id: string | null;
+    border_agent_id: string | null;
+    active_operational_dataset: string | null;
+  };
 }
 
 interface EMOutgoingMessageImportThreadCredentials extends EMMessage {
   type: "thread/import_credentials";
 }
 
-type EMOutgoingMessageWithAnswer = {
+interface EMOutgoingMessageWithAnswer {
   "config/get": {
     request: EMOutgoingMessageConfigGet;
     response: ExternalConfig;
   };
-};
+}
 
 interface EMOutgoingMessageExoplayerPlayHLS extends EMMessage {
   type: "exoplayer/play_hls";
@@ -125,6 +135,27 @@ interface EMOutgoingMessageAssistShow extends EMMessage {
   };
 }
 
+interface EMOutgoingMessageImprovScan extends EMMessage {
+  type: "improv/scan";
+}
+
+interface EMOutgoingMessageImprovConfigureDevice extends EMMessage {
+  type: "improv/configure_device";
+  payload: {
+    name: string;
+  };
+}
+
+interface EMOutgoingMessageThreadStoreInPlatformKeychain extends EMMessage {
+  type: "thread/store_in_platform_keychain";
+  payload: {
+    mac_extended_address: string | null;
+    border_agent_id: string | null;
+    active_operational_dataset: string;
+    extended_pan_id: string;
+  };
+}
+
 type EMOutgoingMessageWithoutAnswer =
   | EMMessageResultError
   | EMMessageResultSuccess
@@ -142,7 +173,10 @@ type EMOutgoingMessageWithoutAnswer =
   | EMOutgoingMessageMatterCommission
   | EMOutgoingMessageSidebarShow
   | EMOutgoingMessageTagWrite
-  | EMOutgoingMessageThemeUpdate;
+  | EMOutgoingMessageThemeUpdate
+  | EMOutgoingMessageThreadStoreInPlatformKeychain
+  | EMOutgoingMessageImprovScan
+  | EMOutgoingMessageImprovConfigureDevice;
 
 interface EMIncomingMessageRestart {
   id: number;
@@ -212,6 +246,23 @@ export interface EMIncomingMessageBarCodeScanAborted {
   };
 }
 
+export interface ImprovDiscoveredDevice {
+  name: string;
+}
+
+interface EMIncomingMessageImprovDeviceDiscovered extends EMMessage {
+  id: number;
+  type: "command";
+  command: "improv/discovered_device";
+  payload: ImprovDiscoveredDevice;
+}
+
+interface EMIncomingMessageImprovDeviceSetupDone extends EMMessage {
+  id: number;
+  type: "command";
+  command: "improv/device_setup_done";
+}
+
 export type EMIncomingMessageCommands =
   | EMIncomingMessageRestart
   | EMIncomingMessageShowNotifications
@@ -219,7 +270,9 @@ export type EMIncomingMessageCommands =
   | EMIncomingMessageShowSidebar
   | EMIncomingMessageShowAutomationEditor
   | EMIncomingMessageBarCodeScanResult
-  | EMIncomingMessageBarCodeScanAborted;
+  | EMIncomingMessageBarCodeScanAborted
+  | EMIncomingMessageImprovDeviceDiscovered
+  | EMIncomingMessageImprovDeviceSetupDone;
 
 type EMIncomingMessage =
   | EMMessageResultSuccess
@@ -235,14 +288,17 @@ export interface ExternalConfig {
   hasExoPlayer: boolean;
   canCommissionMatter: boolean;
   canImportThreadCredentials: boolean;
+  canTransferThreadCredentialsToKeychain: boolean;
   hasAssist: boolean;
   hasBarCodeScanner: number;
+  canSetupImprov: boolean;
+  downloadFileSupported: boolean;
 }
 
 export class ExternalMessaging {
   public config!: ExternalConfig;
 
-  public commands: { [msgId: number]: CommandInFlight } = {};
+  public commands: Record<number, CommandInFlight> = {};
 
   public msgId = 0;
 

@@ -9,6 +9,7 @@ export interface AssistPipeline {
   language: string;
   conversation_engine: string;
   conversation_language: string | null;
+  prefer_local_intents?: boolean;
   stt_engine: string | null;
   stt_language: string | null;
   tts_engine: string | null;
@@ -28,6 +29,7 @@ export interface AssistPipelineMutableParams {
   language: string;
   conversation_engine: string;
   conversation_language: string | null;
+  prefer_local_intents?: boolean;
   stt_engine: string | null;
   stt_language: string | null;
   tts_engine: string | null;
@@ -37,7 +39,7 @@ export interface AssistPipelineMutableParams {
   wake_word_id: string | null;
 }
 
-export interface assistRunListing {
+export interface AssistRunListing {
   pipeline_run_id: string;
   timestamp: string;
 }
@@ -102,12 +104,42 @@ interface PipelineIntentStartEvent extends PipelineEventBase {
   data: {
     engine: string;
     language: string;
+    prefer_local_intents: boolean;
     intent_input: string;
   };
 }
+
+interface ConversationChatLogAssistantDelta {
+  role: "assistant";
+  content: string;
+  tool_calls: {
+    id: string;
+    tool_name: string;
+    tool_args: Record<string, unknown>;
+  }[];
+}
+
+interface ConversationChatLogToolResultDelta {
+  role: "tool_result";
+  agent_id: string;
+  tool_call_id: string;
+  tool_name: string;
+  tool_result: unknown;
+}
+interface PipelineIntentProgressEvent extends PipelineEventBase {
+  type: "intent-progress";
+  data: {
+    chat_log_delta:
+      | Partial<ConversationChatLogAssistantDelta>
+      // These always come in 1 chunk
+      | ConversationChatLogToolResultDelta;
+  };
+}
+
 interface PipelineIntentEndEvent extends PipelineEventBase {
   type: "intent-end";
   data: {
+    processed_locally: boolean;
     intent_output: ConversationResult;
   };
 }
@@ -137,6 +169,7 @@ export type PipelineRunEvent =
   | PipelineSTTStartEvent
   | PipelineSTTEndEvent
   | PipelineIntentStartEvent
+  | PipelineIntentProgressEvent
   | PipelineIntentEndEvent
   | PipelineTTSStartEvent
   | PipelineTTSEndEvent;
@@ -299,7 +332,7 @@ export const listAssistPipelineRuns = (
   pipeline_id: string
 ) =>
   hass.callWS<{
-    pipeline_runs: assistRunListing[];
+    pipeline_runs: AssistRunListing[];
   }>({
     type: "assist_pipeline/pipeline_debug/list",
     pipeline_id,
@@ -362,7 +395,7 @@ export const setAssistPipelinePreferred = (
   });
 
 export const deleteAssistPipeline = (hass: HomeAssistant, pipelineId: string) =>
-  hass.callWS<void>({
+  hass.callWS<undefined>({
     type: "assist_pipeline/pipeline/delete",
     pipeline_id: pipelineId,
   });

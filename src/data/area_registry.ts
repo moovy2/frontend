@@ -1,31 +1,36 @@
 import { stringCompare } from "../common/string/compare";
-import { HomeAssistant } from "../types";
-import { DeviceRegistryEntry } from "./device_registry";
-import { EntityRegistryEntry } from "./entity_registry";
+import type { HomeAssistant } from "../types";
+import type { DeviceRegistryEntry } from "./device_registry";
+import type { EntityRegistryEntry } from "./entity_registry";
+import type { RegistryEntry } from "./registry";
 
 export { subscribeAreaRegistry } from "./ws-area_registry";
 
-export interface AreaRegistryEntry {
+export interface AreaRegistryEntry extends RegistryEntry {
+  aliases: string[];
   area_id: string;
+  floor_id: string | null;
+  humidity_entity_id: string | null;
+  icon: string | null;
+  labels: string[];
   name: string;
   picture: string | null;
-  icon: string | null;
-  aliases: string[];
+  temperature_entity_id: string | null;
 }
 
-export interface AreaEntityLookup {
-  [areaId: string]: EntityRegistryEntry[];
-}
+export type AreaEntityLookup = Record<string, EntityRegistryEntry[]>;
 
-export interface AreaDeviceLookup {
-  [areaId: string]: DeviceRegistryEntry[];
-}
+export type AreaDeviceLookup = Record<string, DeviceRegistryEntry[]>;
 
 export interface AreaRegistryEntryMutableParams {
+  aliases?: string[];
+  floor_id?: string | null;
+  humidity_entity_id?: string | null;
+  icon?: string | null;
+  labels?: string[];
   name: string;
   picture?: string | null;
-  icon?: string | null;
-  aliases?: string[];
+  temperature_entity_id?: string | null;
 }
 
 export const createAreaRegistryEntry = (

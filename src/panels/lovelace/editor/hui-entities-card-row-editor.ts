@@ -1,5 +1,5 @@
 import { mdiClose, mdiDrag, mdiPencil } from "@mdi/js";
-import { CSSResultGroup, LitElement, css, html, nothing } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
 import { fireEvent } from "../../../common/dom/fire_event";
@@ -8,8 +8,8 @@ import type { HaEntityPicker } from "../../../components/entity/ha-entity-picker
 import "../../../components/ha-icon-button";
 import "../../../components/ha-sortable";
 import "../../../components/ha-svg-icon";
-import { HomeAssistant } from "../../../types";
-import { EntityConfig, LovelaceRowConfig } from "../entity-rows/types";
+import type { HomeAssistant } from "../../../types";
+import type { EntityConfig, LovelaceRowConfig } from "../entity-rows/types";
 
 declare global {
   interface HASSDomEvents {
@@ -81,7 +81,7 @@ export class HuiEntitiesCardRowEditor extends LitElement {
                   : html`
                       <ha-entity-picker
                         allow-custom-entity
-                        hideClearIcon
+                        hide-clear-icon
                         .hass=${this.hass}
                         .value=${(entityConf as EntityConfig).entity}
                         .index=${index}
@@ -179,66 +179,64 @@ export class HuiEntitiesCardRowEditor extends LitElement {
     });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-entity-picker {
-        margin-top: 8px;
-      }
-      .add-entity {
-        display: block;
-        margin-left: 31px;
-        margin-right: 71px;
-        margin-inline-start: 31px;
-        margin-inline-end: 71px;
-        direction: var(--direction);
-      }
-      .entity {
-        display: flex;
-        align-items: center;
-      }
+  static styles = css`
+    ha-entity-picker {
+      margin-top: 8px;
+    }
+    .add-entity {
+      display: block;
+      margin-left: 31px;
+      margin-right: 71px;
+      margin-inline-start: 31px;
+      margin-inline-end: 71px;
+      direction: var(--direction);
+    }
+    .entity {
+      display: flex;
+      align-items: center;
+    }
 
-      .entity .handle {
-        padding-right: 8px;
-        cursor: move; /* fallback if grab cursor is unsupported */
-        cursor: grab;
-        padding-inline-end: 8px;
-        padding-inline-start: initial;
-        direction: var(--direction);
-      }
-      .entity .handle > * {
-        pointer-events: none;
-      }
+    .entity .handle {
+      padding-right: 8px;
+      cursor: move; /* fallback if grab cursor is unsupported */
+      cursor: grab;
+      padding-inline-end: 8px;
+      padding-inline-start: initial;
+      direction: var(--direction);
+    }
+    .entity .handle > * {
+      pointer-events: none;
+    }
 
-      .entity ha-entity-picker {
-        flex-grow: 1;
-      }
+    .entity ha-entity-picker {
+      flex-grow: 1;
+    }
 
-      .special-row {
-        height: 60px;
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-grow: 1;
-      }
+    .special-row {
+      height: 60px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-grow: 1;
+    }
 
-      .special-row div {
-        display: flex;
-        flex-direction: column;
-      }
+    .special-row div {
+      display: flex;
+      flex-direction: column;
+    }
 
-      .remove-icon,
-      .edit-icon {
-        --mdc-icon-button-size: 36px;
-        color: var(--secondary-text-color);
-      }
+    .remove-icon,
+    .edit-icon {
+      --mdc-icon-button-size: 36px;
+      color: var(--secondary-text-color);
+    }
 
-      .secondary {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-      }
-    `;
-  }
+    .secondary {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+    }
+  `;
 }
 
 declare global {
