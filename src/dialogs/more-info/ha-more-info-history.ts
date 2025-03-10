@@ -1,29 +1,25 @@
-import { startOfYesterday, subHours } from "date-fns/esm";
-import { LitElement, PropertyValues, css, html, nothing } from "lit";
-import { customElement, property, query, state } from "lit/decorators";
+import { startOfYesterday, subHours } from "date-fns";
+import type { PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators";
 import { isComponentLoaded } from "../../common/config/is_component_loaded";
-import { fireEvent } from "../../common/dom/fire_event";
 import { computeDomain } from "../../common/entity/compute_domain";
 import { createSearchParam } from "../../common/url/search-params";
-import { ChartResizeOptions } from "../../components/chart/ha-chart-base";
 import "../../components/chart/state-history-charts";
-import type { StateHistoryCharts } from "../../components/chart/state-history-charts";
 import "../../components/chart/statistics-chart";
-import type { StatisticsChart } from "../../components/chart/statistics-chart";
+import type { HistoryResult } from "../../data/history";
 import {
-  HistoryResult,
   computeHistory,
   subscribeHistoryStatesTimeWindow,
 } from "../../data/history";
-import {
+import type {
   Statistics,
   StatisticsMetaData,
   StatisticsTypes,
-  fetchStatistics,
-  getStatisticMetadata,
 } from "../../data/recorder";
+import { fetchStatistics, getStatisticMetadata } from "../../data/recorder";
 import { getSensorNumericDeviceClasses } from "../../data/sensor";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 
 declare global {
   interface HASSDomEvents {
@@ -37,7 +33,7 @@ const statTypes: StatisticsTypes = ["state", "min", "mean", "max"];
 export class MoreInfoHistory extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public entityId!: string;
+  @property({ attribute: false }) public entityId!: string;
 
   @state() private _stateHistory?: HistoryResult;
 
@@ -49,21 +45,11 @@ export class MoreInfoHistory extends LitElement {
 
   private _interval?: number;
 
-  private _subscribed?: Promise<(() => Promise<void>) | void>;
+  private _subscribed?: Promise<(() => Promise<void>) | undefined>;
 
   private _error?: string;
 
   private _metadata?: Record<string, StatisticsMetaData>;
-
-  @query("statistics-chart, state-history-charts") private _chart?:
-    | StateHistoryCharts
-    | StatisticsChart;
-
-  public resize = (options?: ChartResizeOptions): void => {
-    if (this._chart) {
-      this._chart.resize(options);
-    }
-  };
 
   protected render() {
     if (!this.entityId) {
@@ -75,11 +61,13 @@ export class MoreInfoHistory extends LitElement {
             <div class="title">
               ${this.hass.localize("ui.dialogs.more_info_control.history")}
             </div>
-            <a href=${this._showMoreHref} @click=${this._close}
-              >${this.hass.localize(
-                "ui.dialogs.more_info_control.show_more"
-              )}</a
-            >
+            ${__DEMO__
+              ? nothing
+              : html`<a href=${this._showMoreHref}
+                  >${this.hass.localize(
+                    "ui.dialogs.more_info_control.show_more"
+                  )}</a
+                >`}
           </div>
           ${this._error
             ? html`<div class="errors">${this._error}</div>`
@@ -91,8 +79,7 @@ export class MoreInfoHistory extends LitElement {
                   .metadata=${this._metadata}
                   .statTypes=${statTypes}
                   .names=${this._statNames}
-                  hideLegend
-                  .showNames=${false}
+                  hide-legend
                   .clickForMoreInfo=${false}
                 ></statistics-chart>`
               : html`<state-history-charts
@@ -239,12 +226,9 @@ export class MoreInfoHistory extends LitElement {
     ).catch((err) => {
       this._subscribed = undefined;
       this._error = err;
+      return undefined;
     });
     this._setRedrawTimer();
-  }
-
-  private _close(): void {
-    setTimeout(() => fireEvent(this, "close-dialog"), 500);
   }
 
   static styles = css`

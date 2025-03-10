@@ -1,23 +1,24 @@
-import { ComboBoxLitRenderer } from "@vaadin/combo-box/lit";
-import { HassEntity } from "home-assistant-js-websocket";
-import { LitElement, PropertyValues, TemplateResult, html } from "lit";
+import type { ComboBoxLitRenderer } from "@vaadin/combo-box/lit";
+import type { HassEntity } from "home-assistant-js-websocket";
+import type { PropertyValues, TemplateResult } from "lit";
+import { LitElement, html } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../../common/dom/fire_event";
 import { computeDomain } from "../../common/entity/compute_domain";
 import { stringCompare } from "../../common/string/compare";
-import {
-  ScorableTextItem,
-  fuzzyFilterSort,
-} from "../../common/string/filter/sequence-matching";
-import {
+import type { ScorableTextItem } from "../../common/string/filter/sequence-matching";
+import { fuzzyFilterSort } from "../../common/string/filter/sequence-matching";
+import type {
   DeviceEntityDisplayLookup,
   DeviceRegistryEntry,
+} from "../../data/device_registry";
+import {
   computeDeviceName,
   getDeviceEntityDisplayLookup,
 } from "../../data/device_registry";
-import { EntityRegistryDisplayEntry } from "../../data/entity_registry";
-import { HomeAssistant, ValueChangedEvent } from "../../types";
+import type { EntityRegistryDisplayEntry } from "../../data/entity_registry";
+import type { HomeAssistant, ValueChangedEvent } from "../../types";
 import "../ha-combo-box";
 import type { HaComboBox } from "../ha-combo-box";
 import "../ha-list-item";
@@ -221,7 +222,9 @@ export class HaDevicePicker extends LitElement {
 
         return {
           id: device.id,
-          name: name,
+          name:
+            name ||
+            this.hass.localize("ui.components.device-picker.unnamed_device"),
           area:
             device.area_id && areas[device.area_id]
               ? areas[device.area_id].name

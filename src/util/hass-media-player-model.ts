@@ -1,14 +1,14 @@
-import { HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity } from "home-assistant-js-websocket";
 import { supportsFeature } from "../common/entity/supports-feature";
 import { cleanupMediaTitle } from "../data/media-player";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 
 export default class MediaPlayerEntity {
   public hass: HomeAssistant;
 
   public stateObj: HassEntity;
 
-  private _attr: { [key: string]: any };
+  private _attr: Record<string, any>;
 
   constructor(hass: HomeAssistant, stateObj: HassEntity) {
     this.hass = hass;

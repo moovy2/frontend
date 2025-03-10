@@ -1,11 +1,5 @@
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { styleMap } from "lit/directives/style-map";
 import memoizeOne from "memoize-one";
@@ -20,18 +14,14 @@ import { stateColorCss } from "../../../../common/entity/state_color";
 import { throttle } from "../../../../common/util/throttle";
 import "../../../../components/ha-control-slider";
 import { UNAVAILABLE } from "../../../../data/entity";
-import {
-  LightColor,
-  LightColorMode,
-  LightEntity,
-} from "../../../../data/light";
-import { HomeAssistant } from "../../../../types";
+import type { LightColor, LightEntity } from "../../../../data/light";
+import { LightColorMode } from "../../../../data/light";
+import type { HomeAssistant } from "../../../../types";
 import { DOMAIN_ATTRIBUTES_UNITS } from "../../../../data/entity_attributes";
 
 declare global {
   interface HASSDomEvents {
     "color-changed": LightColor;
-    "color-hovered": LightColor | undefined;
   }
 }
 
@@ -63,6 +53,8 @@ class LightColorTempPicker extends LitElement {
 
   @state() private _ctPickerValue?: number;
 
+  @state() private _isInteracting?: boolean;
+
   protected render() {
     if (!this.stateObj) {
       return nothing;
@@ -78,6 +70,7 @@ class LightColorTempPicker extends LitElement {
 
     return html`
       <ha-control-slider
+        touch-action="none"
         inverted
         vertical
         .value=${this._ctPickerValue}
@@ -105,7 +98,7 @@ class LightColorTempPicker extends LitElement {
     (min: number, max: number) => generateColorTemperatureGradient(min, max)
   );
 
-  public _updateSliderValues() {
+  private _updateSliderValues() {
     const stateObj = this.stateObj;
 
     if (stateObj.state === "on") {
@@ -121,7 +114,7 @@ class LightColorTempPicker extends LitElement {
   public willUpdate(changedProps: PropertyValues) {
     super.willUpdate(changedProps);
 
-    if (!changedProps.has("stateObj")) {
+    if (this._isInteracting || !changedProps.has("stateObj")) {
       return;
     }
 
@@ -131,15 +124,13 @@ class LightColorTempPicker extends LitElement {
   private _ctColorCursorMoved(ev: CustomEvent) {
     const ct = ev.detail.value;
 
+    this._isInteracting = ct !== undefined;
+
     if (isNaN(ct) || this._ctPickerValue === ct) {
       return;
     }
 
     this._ctPickerValue = ct;
-
-    fireEvent(this, "color-hovered", {
-      color_temp_kelvin: ct,
-    });
 
     this._throttleUpdateColorTemp();
   }
@@ -150,8 +141,6 @@ class LightColorTempPicker extends LitElement {
 
   private _ctColorChanged(ev: CustomEvent) {
     const ct = ev.detail.value;
-
-    fireEvent(this, "color-hovered", undefined);
 
     if (isNaN(ct) || this._ctPickerValue === ct) {
       return;
@@ -189,8 +178,8 @@ class LightColorTempPicker extends LitElement {
           height: 45vh;
           max-height: 320px;
           min-height: 200px;
-          --control-slider-thickness: 100px;
-          --control-slider-border-radius: 24px;
+          --control-slider-thickness: 130px;
+          --control-slider-border-radius: 36px;
           --control-slider-color: var(--primary-color);
           --control-slider-background: -webkit-linear-gradient(
             top,

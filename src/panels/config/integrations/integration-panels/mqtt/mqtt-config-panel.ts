@@ -1,5 +1,6 @@
 import "@material/mwc-button";
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import { storage } from "../../../../../common/decorators/storage";
 import "../../../../../components/ha-card";
@@ -10,7 +11,7 @@ import { getConfigEntries } from "../../../../../data/config_entries";
 import { showOptionsFlowDialog } from "../../../../../dialogs/config-flow/show-dialog-options-flow";
 import "../../../../../layouts/hass-subpage";
 import { haStyle } from "../../../../../resources/styles";
-import { HomeAssistant } from "../../../../../types";
+import type { HomeAssistant } from "../../../../../types";
 import "./mqtt-subscribe-card";
 
 const qosLevel = ["0", "1", "2"];
@@ -66,7 +67,7 @@ export class MQTTConfigPanel extends LitElement {
             <div class="card-actions">
               <mwc-button @click=${this._openOptionFlow}
                 >${this.hass.localize(
-                  "ui.panel.config.mqtt.reconfigure"
+                  "ui.panel.config.mqtt.option_flow"
                 )}</mwc-button
               >
             </div>

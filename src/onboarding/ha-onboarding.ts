@@ -1,12 +1,13 @@
 import "@material/mwc-linear-progress/mwc-linear-progress";
+import type { Auth } from "home-assistant-js-websocket";
 import {
-  Auth,
   createConnection,
   genClientId,
   getAuth,
   subscribeConfig,
 } from "home-assistant-js-websocket";
-import { PropertyValues, css, html, nothing } from "lit";
+import type { PropertyValues } from "lit";
+import { css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import {
   enableWrite,
@@ -14,7 +15,7 @@ import {
   saveTokens,
 } from "../common/auth/token_storage";
 import { applyThemesOnElement } from "../common/dom/apply_themes_on_element";
-import { HASSDomEvent } from "../common/dom/fire_event";
+import type { HASSDomEvent } from "../common/dom/fire_event";
 import {
   addSearchParam,
   extractSearchParam,
@@ -22,10 +23,10 @@ import {
 } from "../common/url/search-params";
 import { subscribeOne } from "../common/util/subscribe-one";
 import "../components/ha-card";
-import { AuthUrlSearchParams, hassUrl } from "../data/auth";
+import type { AuthUrlSearchParams } from "../data/auth";
+import { hassUrl } from "../data/auth";
+import type { OnboardingResponses, OnboardingStep } from "../data/onboarding";
 import {
-  OnboardingResponses,
-  OnboardingStep,
   fetchInstallationType,
   fetchOnboardingOverview,
   onboardIntegrationStep,
@@ -33,13 +34,14 @@ import {
 import { subscribeUser } from "../data/ws-user";
 import { litLocalizeLiteMixin } from "../mixins/lit-localize-lite-mixin";
 import { HassElement } from "../state/hass-element";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 import { storeState } from "../util/ha-pref-storage";
 import { registerServiceWorker } from "../util/register-service-worker";
 import "./onboarding-analytics";
 import "./onboarding-create-user";
 import "./onboarding-loading";
 import "./onboarding-welcome";
+import "./onboarding-restore-backup";
 import "./onboarding-welcome-links";
 import { makeDialogManager } from "../dialogs/make-dialog-manager";
 import { navigate } from "../common/navigate";
@@ -87,7 +89,8 @@ declare global {
 class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @property() public translationFragment = "page-onboarding";
+  @property({ attribute: false }) public translationFragment =
+    "page-onboarding";
 
   @state() private _progress = 0;
 
@@ -139,8 +142,9 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
         <ha-language-picker
           .value=${this.language}
           .label=${""}
-          nativeName
+          native-name
           @value-changed=${this._languageChanged}
+          inline-arrow
         ></ha-language-picker>
         <a
           href="https://www.home-assistant.io/getting-started/onboarding/"
@@ -154,8 +158,9 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
   private _renderStep() {
     if (this._restoring) {
       return html`<onboarding-restore-backup
-        .hass=${this.hass}
         .localize=${this.localize}
+        .supervisor=${this._supervisor ?? false}
+        .language=${this.language}
       >
       </onboarding-restore-backup>`;
     }
@@ -163,8 +168,6 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
     if (this._init) {
       return html`<onboarding-welcome
         .localize=${this.localize}
-        .language=${this.language}
-        .supervisor=${this._supervisor}
       ></onboarding-welcome>`;
     }
 
@@ -233,7 +236,7 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
       }
     }
     if (changedProps.has("language")) {
-      document.querySelector("html")!.setAttribute("lang", this.language!);
+      document.querySelector("html")!.setAttribute("lang", this.language);
     }
     if (changedProps.has("hass")) {
       const oldHass = changedProps.get("hass") as HomeAssistant | undefined;
@@ -269,10 +272,6 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
         "Home Assistant OS",
         "Home Assistant Supervised",
       ].includes(response.installation_type);
-      if (this._supervisor) {
-        // Only load if we have supervisor
-        import("./onboarding-restore-backup");
-      }
     } catch (err: any) {
       // eslint-disable-next-line no-console
       console.error(
@@ -320,7 +319,7 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
       }
 
       this._steps = steps;
-    } catch (err: any) {
+    } catch (_err: any) {
       alert("Something went wrong loading onboarding, try refreshing");
     }
   }
@@ -367,7 +366,7 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
           saveTokens,
         });
         await this._connectHass(auth);
-      } catch (err: any) {
+      } catch (_err: any) {
         alert("Ah snap, something went wrong!");
         location.reload();
       } finally {
@@ -451,7 +450,7 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
       subscribeOne(conn, subscribeUser),
     ]);
     this.initializeHass(auth, conn);
-    if (this.language && this.language !== this.hass!.language) {
+    if (this.language !== this.hass!.language) {
       this._updateHass({
         locale: { ...this.hass!.locale, language: this.language },
         language: this.language,
@@ -479,8 +478,11 @@ class HaOnboarding extends litLocalizeLiteMixin(HassElement) {
       storeState(this.hass!);
     } else {
       try {
-        localStorage.setItem("selectedLanguage", JSON.stringify(language));
-      } catch (err: any) {
+        window.localStorage.setItem(
+          "selectedLanguage",
+          JSON.stringify(language)
+        );
+      } catch (_err: any) {
         // Ignore
       }
     }

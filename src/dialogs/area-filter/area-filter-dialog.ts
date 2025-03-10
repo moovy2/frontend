@@ -1,6 +1,7 @@
 import "@material/mwc-list/mwc-list";
 import { mdiDrag, mdiEye, mdiEyeOff } from "@mdi/js";
-import { CSSResultGroup, LitElement, css, html, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { repeat } from "lit/directives/repeat";
@@ -13,9 +14,9 @@ import "../../components/ha-list-item";
 import "../../components/ha-sortable";
 import { areaCompare } from "../../data/area_registry";
 import { haStyleDialog } from "../../resources/styles";
-import { HomeAssistant } from "../../types";
-import { HassDialog } from "../make-dialog-manager";
-import { AreaFilterDialogParams } from "./show-area-filter-dialog";
+import type { HomeAssistant } from "../../types";
+import type { HassDialog } from "../make-dialog-manager";
+import type { AreaFilterDialogParams } from "./show-area-filter-dialog";
 
 @customElement("dialog-area-filter")
 export class DialogAreaFilter
@@ -38,11 +39,12 @@ export class DialogAreaFilter
     this._areas = allAreas.concat().sort(areaCompare(this.hass!.areas, order));
   }
 
-  public closeDialog(): void {
+  public closeDialog() {
     this._dialogParams = undefined;
     this._hidden = [];
     this._areas = [];
     fireEvent(this, "dialog-closed", { dialog: this.localName });
+    return true;
   }
 
   private _submit(): void {
@@ -146,7 +148,7 @@ export class DialogAreaFilter
     `;
   }
 
-  _toggle(ev) {
+  private _toggle(ev) {
     const area = ev.target.area;
     const hidden = [...(this._hidden ?? [])];
     if (hidden.includes(area)) {

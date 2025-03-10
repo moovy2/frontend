@@ -1,58 +1,51 @@
 import { mdiAlertCircle } from "@mdi/js";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  nothing,
-  PropertyValues,
-} from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { isComponentLoaded } from "../../../common/config/is_component_loaded";
 import { fireEvent } from "../../../common/dom/fire_event";
+import type {
+  EntityDomainFilter,
+  EntityDomainFilterFunc,
+} from "../../../common/entity/entity_domain_filter";
 import {
-  EntityFilter,
-  FilterFunc,
-  generateFilter,
-  isEmptyFilter,
-} from "../../../common/entity/entity_filter";
+  generateEntityDomainFilter,
+  isEmptyEntityDomainFilter,
+} from "../../../common/entity/entity_domain_filter";
 import "../../../components/ha-aliases-editor";
 import "../../../components/ha-settings-row";
 import "../../../components/ha-switch";
+import "../../../components/ha-formfield";
+import "../../../components/ha-checkbox";
+import "../../../components/ha-alert";
 import { fetchCloudAlexaEntity } from "../../../data/alexa";
+import type { CloudStatus, CloudStatusLoggedIn } from "../../../data/cloud";
 import {
-  CloudStatus,
-  CloudStatusLoggedIn,
   fetchCloudStatus,
   updateCloudGoogleEntityConfig,
 } from "../../../data/cloud";
+import type { ExtEntityRegistryEntry } from "../../../data/entity_registry";
 import {
-  ExtEntityRegistryEntry,
   getExtendedEntityRegistryEntry,
   updateEntityRegistryEntry,
 } from "../../../data/entity_registry";
-import {
-  fetchCloudGoogleEntity,
-  GoogleEntity,
-} from "../../../data/google_assistant";
-import {
-  exposeEntities,
-  ExposeEntitySettings,
-  voiceAssistants,
-} from "../../../data/expose";
+import type { GoogleEntity } from "../../../data/google_assistant";
+import { fetchCloudGoogleEntity } from "../../../data/google_assistant";
+import type { ExposeEntitySettings } from "../../../data/expose";
+import { exposeEntities, voiceAssistants } from "../../../data/expose";
 import { SubscribeMixin } from "../../../mixins/subscribe-mixin";
 import { haStyle } from "../../../resources/styles";
 import type { HomeAssistant } from "../../../types";
 import { brandsUrl } from "../../../util/brands-url";
-import { EntityRegistrySettings } from "../entities/entity-registry-settings";
+import type { EntityRegistrySettings } from "../entities/entity-registry-settings";
 import { documentationUrl } from "../../../util/documentation-url";
 
 @customElement("entity-voice-settings")
 export class EntityVoiceSettings extends SubscribeMixin(LitElement) {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public entityId!: string;
+  @property({ attribute: false }) public entityId!: string;
 
   @property({ attribute: false }) public exposed!: ExposeEntitySettings;
 
@@ -108,14 +101,14 @@ export class EntityVoiceSettings extends SubscribeMixin(LitElement) {
   }
 
   private _getEntityFilterFuncs = memoizeOne(
-    (googleFilter: EntityFilter, alexaFilter: EntityFilter) => ({
-      google: generateFilter(
+    (googleFilter: EntityDomainFilter, alexaFilter: EntityDomainFilter) => ({
+      google: generateEntityDomainFilter(
         googleFilter.include_domains,
         googleFilter.include_entities,
         googleFilter.exclude_domains,
         googleFilter.exclude_entities
       ),
-      alexa: generateFilter(
+      alexa: generateEntityDomainFilter(
         alexaFilter.include_domains,
         alexaFilter.include_entities,
         alexaFilter.exclude_domains,
@@ -138,10 +131,12 @@ export class EntityVoiceSettings extends SubscribeMixin(LitElement) {
 
     const alexaManual =
       alexaEnabled &&
-      !isEmptyFilter((this._cloudStatus as CloudStatusLoggedIn).alexa_entities);
+      !isEmptyEntityDomainFilter(
+        (this._cloudStatus as CloudStatusLoggedIn).alexa_entities
+      );
     const googleManual =
       googleEnabled &&
-      !isEmptyFilter(
+      !isEmptyEntityDomainFilter(
         (this._cloudStatus as CloudStatusLoggedIn).google_entities
       );
 
@@ -166,8 +161,8 @@ export class EntityVoiceSettings extends SubscribeMixin(LitElement) {
 
     let manFilterFuncs:
       | {
-          google: FilterFunc;
-          alexa: FilterFunc;
+          google: EntityDomainFilterFunc;
+          alexa: EntityDomainFilterFunc;
         }
       | undefined;
 
@@ -305,7 +300,15 @@ export class EntityVoiceSettings extends SubscribeMixin(LitElement) {
   }
 
   private _aliasesChanged(ev) {
+    const currentLength =
+      this._aliases?.length ?? this.entry?.aliases?.length ?? 0;
+
     this._aliases = ev.detail.value;
+
+    // if an entry was deleted, then save changes
+    if (currentLength > ev.detail.value.length) {
+      this._saveAliases();
+    }
   }
 
   private async _2faChanged(ev) {

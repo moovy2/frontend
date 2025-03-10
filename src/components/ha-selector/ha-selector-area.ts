@@ -1,21 +1,22 @@
-import { HassEntity } from "home-assistant-js-websocket";
-import { html, LitElement, PropertyValues, nothing } from "lit";
+import type { HassEntity } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { ensureArray } from "../../common/array/ensure-array";
 import type { DeviceRegistryEntry } from "../../data/device_registry";
 import { getDeviceIntegrationLookup } from "../../data/device_registry";
 import { fireEvent } from "../../common/dom/fire_event";
-import {
-  EntitySources,
-  fetchEntitySourcesWithCache,
-} from "../../data/entity_sources";
+import type { EntitySources } from "../../data/entity_sources";
+import { fetchEntitySourcesWithCache } from "../../data/entity_sources";
 import type { AreaSelector } from "../../data/selector";
+import type { ConfigEntry } from "../../data/config_entries";
+import { getConfigEntries } from "../../data/config_entries";
 import {
   filterSelectorDevices,
   filterSelectorEntities,
 } from "../../data/selector";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 import "../ha-area-picker";
 import "../ha-areas-picker";
 
@@ -36,6 +37,8 @@ export class HaAreaSelector extends LitElement {
   @property({ type: Boolean }) public required = true;
 
   @state() private _entitySources?: EntitySources;
+
+  @state() private _configEntries?: ConfigEntry[];
 
   private _deviceIntegrationLookup = memoizeOne(getDeviceIntegrationLookup);
 
@@ -72,6 +75,12 @@ export class HaAreaSelector extends LitElement {
         this._entitySources = sources;
       });
     }
+    if (!this._configEntries && this._hasIntegration(this.selector)) {
+      this._configEntries = [];
+      getConfigEntries(this.hass).then((entries) => {
+        this._configEntries = entries;
+      });
+    }
   }
 
   protected render() {
@@ -87,8 +96,12 @@ export class HaAreaSelector extends LitElement {
           .label=${this.label}
           .helper=${this.helper}
           no-add
-          .deviceFilter=${this._filterDevices}
-          .entityFilter=${this._filterEntities}
+          .deviceFilter=${this.selector.area?.device
+            ? this._filterDevices
+            : undefined}
+          .entityFilter=${this.selector.area?.entity
+            ? this._filterEntities
+            : undefined}
           .disabled=${this.disabled}
           .required=${this.required}
         ></ha-area-picker>
@@ -102,8 +115,12 @@ export class HaAreaSelector extends LitElement {
         .helper=${this.helper}
         .pickAreaLabel=${this.label}
         no-add
-        .deviceFilter=${this._filterDevices}
-        .entityFilter=${this._filterEntities}
+        .deviceFilter=${this.selector.area?.device
+          ? this._filterDevices
+          : undefined}
+        .entityFilter=${this.selector.area?.entity
+          ? this._filterEntities
+          : undefined}
         .disabled=${this.disabled}
         .required=${this.required}
       ></ha-areas-picker>
@@ -128,7 +145,9 @@ export class HaAreaSelector extends LitElement {
     const deviceIntegrations = this._entitySources
       ? this._deviceIntegrationLookup(
           this._entitySources,
-          Object.values(this.hass.entities)
+          Object.values(this.hass.entities),
+          Object.values(this.hass.devices),
+          this._configEntries
         )
       : undefined;
 

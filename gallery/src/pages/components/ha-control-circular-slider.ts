@@ -1,4 +1,5 @@
-import { css, html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators";
 import "../../../../src/components/ha-card";
 import "../../../../src/components/ha-control-circular-slider";
@@ -132,39 +133,37 @@ export class DemoHaCircularSlider extends LitElement {
     `;
   }
 
-  static get styles() {
-    return css`
-      ha-card {
-        max-width: 600px;
-        margin: 24px auto;
-      }
-      pre {
-        margin-top: 0;
-        margin-bottom: 8px;
-      }
-      p {
-        margin: 0;
-      }
-      p.title {
-        margin-bottom: 12px;
-      }
-      ha-control-circular-slider {
-        --control-circular-slider-color: #ff9800;
-      }
-      ha-control-circular-slider[inverted] {
-        --control-circular-slider-color: #2196f3;
-      }
-      ha-control-circular-slider[dual] {
-        --control-circular-slider-high-color: #2196f3;
-        --control-circular-slider-low-color: #ff9800;
-      }
-      .field {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-      }
-    `;
-  }
+  static styles = css`
+    ha-card {
+      max-width: 600px;
+      margin: 24px auto;
+    }
+    pre {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    p {
+      margin: 0;
+    }
+    p.title {
+      margin-bottom: 12px;
+    }
+    ha-control-circular-slider {
+      --control-circular-slider-color: #ff9800;
+    }
+    ha-control-circular-slider[inverted] {
+      --control-circular-slider-color: #2196f3;
+    }
+    ha-control-circular-slider[dual] {
+      --control-circular-slider-high-color: #2196f3;
+      --control-circular-slider-low-color: #ff9800;
+    }
+    .field {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+  `;
 }
 
 declare global {

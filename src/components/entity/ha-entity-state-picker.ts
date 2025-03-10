@@ -1,9 +1,10 @@
-import { HassEntity } from "home-assistant-js-websocket";
-import { LitElement, PropertyValues, html, nothing } from "lit";
+import type { HassEntity } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { LitElement, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { fireEvent } from "../../common/dom/fire_event";
 import { getStates } from "../../common/entity/get_states";
-import { HomeAssistant, ValueChangedEvent } from "../../types";
+import type { HomeAssistant, ValueChangedEvent } from "../../types";
 import "../ha-combo-box";
 import type { HaComboBox } from "../ha-combo-box";
 
@@ -13,12 +14,13 @@ export type HaEntityPickerEntityFilterFunc = (entityId: HassEntity) => boolean;
 class HaEntityStatePicker extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public entityId?: string;
+  @property({ attribute: false }) public entityId?: string;
 
   @property() public attribute?: string;
 
   @property({ attribute: false }) public extraOptions?: any[];
 
+  // eslint-disable-next-line lit/no-native-attributes
   @property({ type: Boolean }) public autofocus = false;
 
   @property({ type: Boolean }) public disabled = false;
@@ -55,7 +57,7 @@ class HaEntityStatePicker extends LitElement {
       (this._comboBox as any).items = [
         ...(this.extraOptions ?? []),
         ...(this.entityId && stateObj
-          ? getStates(stateObj, this.attribute).map((key) => ({
+          ? getStates(this.hass, stateObj, this.attribute).map((key) => ({
               value: key,
               label: !this.attribute
                 ? this.hass.formatEntityState(stateObj, key)

@@ -6,8 +6,8 @@ import {
   handleConfigFlowStep,
 } from "../../data/config_flow";
 import { domainToName } from "../../data/integration";
+import type { DataEntryFlowDialogParams } from "./show-dialog-data-entry-flow";
 import {
-  DataEntryFlowDialogParams,
   loadDataEntryFlowDialog,
   showFlowDialog,
 } from "./show-dialog-data-entry-flow";
@@ -16,11 +16,13 @@ export const loadConfigFlowDialog = loadDataEntryFlowDialog;
 
 export const showConfigFlowDialog = (
   element: HTMLElement,
-  dialogParams: Omit<DataEntryFlowDialogParams, "flowConfig">
+  dialogParams: Omit<DataEntryFlowDialogParams, "flowConfig"> & {
+    entryId?: string;
+  }
 ): void =>
   showFlowDialog(element, dialogParams, {
     flowType: "config_flow",
-    loadDevicesAndAreas: true,
+    showDevices: true,
     createFlow: async (hass, handler) => {
       const [step] = await Promise.all([
         createConfigFlow(hass, handler, dialogParams.entryId),
@@ -50,9 +52,9 @@ export const showConfigFlowDialog = (
 
       return description
         ? html`
-            <ha-markdown allowsvg breaks .content=${description}></ha-markdown>
+            <ha-markdown allow-svg breaks .content=${description}></ha-markdown>
           `
-        : "";
+        : step.reason;
     },
 
     renderShowFormStepHeader(hass, step) {
@@ -71,22 +73,41 @@ export const showConfigFlowDialog = (
       );
       return description
         ? html`
-            <ha-markdown allowsvg breaks .content=${description}></ha-markdown>
+            <ha-markdown allow-svg breaks .content=${description}></ha-markdown>
           `
         : "";
     },
 
-    renderShowFormStepFieldLabel(hass, step, field) {
-      return hass.localize(
-        `component.${step.handler}.config.step.${step.step_id}.data.${field.name}`
+    renderShowFormStepFieldLabel(hass, step, field, options) {
+      if (field.type === "expandable") {
+        return hass.localize(
+          `component.${step.handler}.config.step.${step.step_id}.sections.${field.name}.name`
+        );
+      }
+
+      const prefix = options?.path?.[0] ? `sections.${options.path[0]}.` : "";
+
+      return (
+        hass.localize(
+          `component.${step.handler}.config.step.${step.step_id}.${prefix}data.${field.name}`
+        ) || field.name
       );
     },
 
-    renderShowFormStepFieldHelper(hass, step, field) {
+    renderShowFormStepFieldHelper(hass, step, field, options) {
+      if (field.type === "expandable") {
+        return hass.localize(
+          `component.${step.translation_domain || step.handler}.config.step.${step.step_id}.sections.${field.name}.description`
+        );
+      }
+
+      const prefix = options?.path?.[0] ? `sections.${options.path[0]}.` : "";
+
       const description = hass.localize(
-        `component.${step.translation_domain || step.handler}.config.step.${step.step_id}.data_description.${field.name}`,
+        `component.${step.translation_domain || step.handler}.config.step.${step.step_id}.${prefix}data_description.${field.name}`,
         step.description_placeholders
       );
+
       return description
         ? html`<ha-markdown breaks .content=${description}></ha-markdown>`
         : "";
@@ -144,7 +165,7 @@ export const showConfigFlowDialog = (
         ${description
           ? html`
               <ha-markdown
-                allowsvg
+                allow-svg
                 breaks
                 .content=${description}
               ></ha-markdown>
@@ -165,7 +186,7 @@ export const showConfigFlowDialog = (
         ${description
           ? html`
               <ha-markdown
-                allowsvg
+                allow-svg
                 breaks
                 .content=${description}
               ></ha-markdown>
@@ -195,7 +216,7 @@ export const showConfigFlowDialog = (
       );
       return description
         ? html`
-            <ha-markdown allowsvg breaks .content=${description}></ha-markdown>
+            <ha-markdown allow-svg breaks .content=${description}></ha-markdown>
           `
         : "";
     },
@@ -215,7 +236,7 @@ export const showConfigFlowDialog = (
       );
       return description
         ? html`
-            <ha-markdown allowsvg breaks .content=${description}></ha-markdown>
+            <ha-markdown allow-svg breaks .content=${description}></ha-markdown>
           `
         : "";
     },
