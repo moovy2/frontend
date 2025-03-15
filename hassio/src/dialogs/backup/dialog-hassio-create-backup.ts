@@ -1,9 +1,11 @@
 import "@material/mwc-button";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { fireEvent } from "../../../../src/common/dom/fire_event";
 import "../../../../src/components/buttons/ha-progress-button";
 import "../../../../src/components/ha-alert";
+import "../../../../src/components/ha-spinner";
 import { createCloseHeading } from "../../../../src/components/ha-dialog";
 import {
   createHassioFullBackup,
@@ -12,10 +14,10 @@ import {
 import { extractApiErrorMessage } from "../../../../src/data/hassio/common";
 import { showAlertDialog } from "../../../../src/dialogs/generic/show-dialog-box";
 import { haStyle, haStyleDialog } from "../../../../src/resources/styles";
-import { HomeAssistant } from "../../../../src/types";
+import type { HomeAssistant } from "../../../../src/types";
 import "../../components/supervisor-backup-content";
 import type { SupervisorBackupContent } from "../../components/supervisor-backup-content";
-import { HassioCreateBackupDialogParams } from "./show-dialog-hassio-create-backup";
+import type { HassioCreateBackupDialogParams } from "./show-dialog-hassio-create-backup";
 
 @customElement("dialog-hassio-create-backup")
 class HassioCreateBackupDialog extends LitElement {
@@ -57,7 +59,7 @@ class HassioCreateBackupDialog extends LitElement {
         )}
       >
         ${this._creatingBackup
-          ? html`<ha-circular-progress indeterminate></ha-circular-progress>`
+          ? html`<ha-spinner></ha-spinner>`
           : html`<supervisor-backup-content
               .hass=${this.hass}
               .supervisor=${this._dialogParams.supervisor}
@@ -140,10 +142,6 @@ class HassioCreateBackupDialog extends LitElement {
       css`
         :host {
           direction: var(--direction);
-        }
-        ha-circular-progress {
-          display: block;
-          text-align: center;
         }
       `,
     ];

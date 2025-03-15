@@ -1,4 +1,4 @@
-import {
+import type {
   HassEntity,
   HassEntityAttributeBase,
 } from "home-assistant-js-websocket";
@@ -12,7 +12,7 @@ import type { DataTableColumnContainer } from "../../../../src/components/data-t
 import "../../../../src/components/entity/state-badge";
 import { provideHass } from "../../../../src/fake_data/provide_hass";
 import { mockIcons } from "../../../../demo/src/stubs/icons";
-import { HomeAssistant } from "../../../../src/types";
+import type { HomeAssistant } from "../../../../src/types";
 
 const SENSOR_DEVICE_CLASSES = [
   "apparent_power",
@@ -139,6 +139,9 @@ const ENTITIES: HassEntity[] = [
   createEntity("climate.auto_off", "auto", undefined, { hvac_action: "off" }),
   createEntity("climate.auto_preheating", "auto", undefined, {
     hvac_action: "preheating",
+  }),
+  createEntity("climate.auto_defrosting", "auto", undefined, {
+    hvac_action: "defrosting",
   }),
   createEntity("climate.auto_heating", "auto", undefined, {
     hvac_action: "heating",
@@ -318,13 +321,13 @@ function createEntity(
   };
 }
 
-type EntityRowData = {
+interface EntityRowData {
   stateObj: HassEntity;
   entity_id: string;
   state: string;
   device_class?: string;
   domain: string;
-};
+}
 
 function createRowData(stateObj: HassEntity): EntityRowData {
   return {
@@ -355,19 +358,18 @@ export class DemoEntityState extends LitElement {
         },
         entity_id: {
           title: "Entity ID",
-          width: "30%",
           filterable: true,
           sortable: true,
         },
         state: {
           title: "State",
-          width: "20%",
           sortable: true,
           template: (entry) =>
             html`${computeStateDisplay(
               hass.localize,
               entry.stateObj,
               hass.locale,
+              [], // numericDeviceClasses
               hass.config,
               hass.entities
             )}`,
@@ -375,14 +377,12 @@ export class DemoEntityState extends LitElement {
         device_class: {
           title: "Device class",
           template: (entry) => html`${entry.device_class ?? "-"}`,
-          width: "20%",
           filterable: true,
           sortable: true,
         },
         domain: {
           title: "Domain",
           template: (entry) => html`${computeDomain(entry.entity_id)}`,
-          width: "20%",
           filterable: true,
           sortable: true,
         },
@@ -406,6 +406,7 @@ export class DemoEntityState extends LitElement {
           entity_id: "select.speed",
           translation_key: "speed",
           platform: "demo",
+          labels: [],
         },
       },
     });
@@ -428,17 +429,15 @@ export class DemoEntityState extends LitElement {
     `;
   }
 
-  static get styles() {
-    return css`
-      .color {
-        display: block;
-        height: 20px;
-        width: 20px;
-        border-radius: 10px;
-        background-color: rgb(--color);
-      }
-    `;
-  }
+  static styles = css`
+    .color {
+      display: block;
+      height: 20px;
+      width: 20px;
+      border-radius: 10px;
+      background-color: rgb(--color);
+    }
+  `;
 }
 
 declare global {

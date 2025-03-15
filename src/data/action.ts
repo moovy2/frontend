@@ -8,9 +8,9 @@ import {
   mdiDevices,
   mdiDotsHorizontal,
   mdiExcavator,
+  mdiFormatListNumbered,
   mdiGestureDoubleTap,
   mdiHandBackRight,
-  mdiPalette,
   mdiPlay,
   mdiRefresh,
   mdiRoomService,
@@ -19,14 +19,13 @@ import {
   mdiTools,
   mdiTrafficLight,
 } from "@mdi/js";
-import { AutomationElementGroup } from "./automation";
+import type { AutomationElementGroup } from "./automation";
 
 export const ACTION_ICONS = {
   condition: mdiAbTesting,
   delay: mdiTimerOutline,
   event: mdiGestureDoubleTap,
   play_media: mdiPlay,
-  activate_scene: mdiPalette,
   service: mdiRoomService,
   wait_template: mdiCodeBraces,
   wait_for_trigger: mdiTrafficLight,
@@ -35,6 +34,7 @@ export const ACTION_ICONS = {
   if: mdiCallSplit,
   device_id: mdiDevices,
   stop: mdiHandBackRight,
+  sequence: mdiFormatListNumbered,
   parallel: mdiShuffleDisabled,
   variables: mdiApplicationVariableOutline,
   set_conversation_response: mdiBullhorn,
@@ -61,6 +61,7 @@ export const ACTION_GROUPS: AutomationElementGroup = {
       choose: {},
       if: {},
       stop: {},
+      sequence: {},
       parallel: {},
       variables: {},
     },

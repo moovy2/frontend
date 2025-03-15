@@ -1,6 +1,6 @@
 import { mdiPlus } from "@mdi/js";
 import "@material/mwc-list/mwc-list";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { stringCompare } from "../../../common/string/compare";
 import "../../../components/ha-card";
@@ -8,21 +8,22 @@ import "../../../components/ha-fab";
 import "../../../components/ha-svg-icon";
 import "../../../components/ha-list-item";
 import "../../../components/user/ha-person-badge";
+import type { Person } from "../../../data/person";
 import {
   createPerson,
   deletePerson,
   fetchPersons,
-  Person,
   updatePerson,
 } from "../../../data/person";
-import { fetchUsers, User } from "../../../data/user";
+import type { User } from "../../../data/user";
+import { fetchUsers } from "../../../data/user";
 import {
   showAlertDialog,
   showConfirmationDialog,
 } from "../../../dialogs/generic/show-dialog-box";
 import "../../../layouts/hass-loading-screen";
 import "../../../layouts/hass-tabs-subpage";
-import { HomeAssistant, Route } from "../../../types";
+import type { HomeAssistant, Route } from "../../../types";
 import { documentationUrl } from "../../../util/documentation-url";
 import "../ha-config-section";
 import { configSections } from "../ha-panel-config";
@@ -35,7 +36,7 @@ import {
 export class HaConfigPerson extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @property({ type: Boolean }) public isWide = false;
+  @property({ attribute: "is-wide", type: Boolean }) public isWide = false;
 
   @property({ type: Boolean }) public narrow = false;
 
@@ -266,7 +267,7 @@ export class HaConfigPerson extends LitElement {
             (ent) => ent !== entry
           );
           return true;
-        } catch (err: any) {
+        } catch (_err: any) {
           return false;
         }
       },
@@ -276,24 +277,25 @@ export class HaConfigPerson extends LitElement {
     });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      a {
-        color: var(--primary-color);
-      }
-      ha-card {
-        max-width: 600px;
-        margin: 16px auto;
-        overflow: hidden;
-      }
-      .empty {
-        padding: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: space-around;
-      }
-    `;
-  }
+  static styles = css`
+    a {
+      color: var(--primary-color);
+    }
+    ha-card {
+      max-width: 600px;
+      margin: 16px auto;
+      overflow: hidden;
+    }
+    .empty {
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+    }
+    mwc-list:has(+ .empty) {
+      display: none;
+    }
+  `;
 }
 
 declare global {

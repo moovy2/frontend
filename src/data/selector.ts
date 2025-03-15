@@ -1,15 +1,23 @@
-import type { HassEntity } from "home-assistant-js-websocket";
+import type {
+  HassEntity,
+  HassServiceTarget,
+} from "home-assistant-js-websocket";
 import { ensureArray } from "../common/array/ensure-array";
 import { computeStateDomain } from "../common/entity/compute_state_domain";
 import { supportsFeature } from "../common/entity/supports-feature";
-import { UiAction } from "../panels/lovelace/components/hui-action-editor";
-import { HomeAssistant, ItemPath } from "../types";
+import type { CropOptions } from "../dialogs/image-cropper-dialog/show-image-cropper-dialog";
+import { isHelperDomain } from "../panels/config/helpers/const";
+import type { UiAction } from "../panels/lovelace/components/hui-action-editor";
+import type { HomeAssistant } from "../types";
 import {
-  DeviceRegistryEntry,
+  type DeviceRegistryEntry,
   getDeviceIntegrationLookup,
 } from "./device_registry";
-import { EntityRegistryDisplayEntry } from "./entity_registry";
-import { EntitySources } from "./entity_sources";
+import type {
+  EntityRegistryDisplayEntry,
+  EntityRegistryEntry,
+} from "./entity_registry";
+import type { EntitySources } from "./entity_sources";
 
 export type Selector =
   | ActionSelector
@@ -18,6 +26,7 @@ export type Selector =
   | AreaFilterSelector
   | AttributeSelector
   | BooleanSelector
+  | ButtonToggleSelector
   | ColorRGBSelector
   | ColorTempSelector
   | ConditionSelector
@@ -28,12 +37,16 @@ export type Selector =
   | DateSelector
   | DateTimeSelector
   | DeviceSelector
+  | FloorSelector
   | LegacyDeviceSelector
   | DurationSelector
   | EntitySelector
   | LegacyEntitySelector
   | FileSelector
   | IconSelector
+  | LabelSelector
+  | ImageSelector
+  | BackgroundSelector
   | LanguageSelector
   | LocationSelector
   | MediaSelector
@@ -56,12 +69,12 @@ export type Selector =
   | TTSSelector
   | TTSVoiceSelector
   | UiActionSelector
-  | UiColorSelector;
+  | UiColorSelector
+  | UiStateContentSelector
+  | BackupLocationSelector;
 
 export interface ActionSelector {
-  action: {
-    path?: ItemPath;
-  } | null;
+  action: {} | null;
 }
 
 export interface AddonSelector {
@@ -80,7 +93,6 @@ export interface AreaSelector {
 }
 
 export interface AreaFilterSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   area_filter: {} | null;
 }
 
@@ -92,12 +104,18 @@ export interface AttributeSelector {
 }
 
 export interface BooleanSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   boolean: {} | null;
 }
 
+export interface ButtonToggleSelector {
+  button_toggle: {
+    options: readonly string[] | readonly SelectOption[];
+    translation_key?: string;
+    sort?: boolean;
+  } | null;
+}
+
 export interface ColorRGBSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   color_rgb: {} | null;
 }
 
@@ -112,9 +130,7 @@ export interface ColorTempSelector {
 }
 
 export interface ConditionSelector {
-  condition: {
-    path?: ItemPath;
-  } | null;
+  condition: {} | null;
 }
 
 export interface ConversationAgentSelector {
@@ -143,12 +159,10 @@ export interface CountrySelector {
 }
 
 export interface DateSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   date: {} | null;
 }
 
 export interface DateTimeSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   datetime: {} | null;
 }
 
@@ -156,12 +170,21 @@ interface DeviceSelectorFilter {
   integration?: string;
   manufacturer?: string;
   model?: string;
+  model_id?: string;
 }
 
 export interface DeviceSelector {
   device: {
     filter?: DeviceSelectorFilter | readonly DeviceSelectorFilter[];
     entity?: EntitySelectorFilter | readonly EntitySelectorFilter[];
+    multiple?: boolean;
+  } | null;
+}
+
+export interface FloorSelector {
+  floor: {
+    entity?: EntitySelectorFilter | readonly EntitySelectorFilter[];
+    device?: DeviceSelectorFilter | readonly DeviceSelectorFilter[];
     multiple?: boolean;
   } | null;
 }
@@ -186,6 +209,7 @@ export interface LegacyDeviceSelector {
 export interface DurationSelector {
   duration: {
     enable_day?: boolean;
+    enable_millisecond?: boolean;
   } | null;
 }
 
@@ -242,6 +266,20 @@ export interface IconSelector {
   } | null;
 }
 
+export interface ImageSelector {
+  image: { original?: boolean; crop?: CropOptions } | null;
+}
+
+export interface BackgroundSelector {
+  background: { original?: boolean; crop?: CropOptions } | null;
+}
+
+export interface LabelSelector {
+  label: {
+    multiple?: boolean;
+  };
+}
+
 export interface LanguageSelector {
   language: {
     languages?: string[];
@@ -251,7 +289,11 @@ export interface LanguageSelector {
 }
 
 export interface LocationSelector {
-  location: { radius?: boolean; icon?: string } | null;
+  location: {
+    radius?: boolean;
+    radius_readonly?: boolean;
+    icon?: string;
+  } | null;
 }
 
 export interface LocationSelectorValue {
@@ -261,7 +303,6 @@ export interface LocationSelectorValue {
 }
 
 export interface MediaSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   media: {} | null;
 }
 
@@ -279,7 +320,6 @@ export interface MediaSelectorValue {
 }
 
 export interface NavigationSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   navigation: {} | null;
 }
 
@@ -290,24 +330,31 @@ export interface NumberSelector {
     step?: number | "any";
     mode?: "box" | "slider";
     unit_of_measurement?: string;
+    slider_ticks?: boolean;
   } | null;
 }
 
 export interface ObjectSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   object: {} | null;
 }
 
 export interface AssistPipelineSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   assist_pipeline: {
     include_last_used?: boolean;
   } | null;
 }
 
+interface SelectBoxOptionImage {
+  src: string;
+  src_dark?: string;
+  flip_rtl?: boolean;
+}
+
 export interface SelectOption {
   value: any;
   label: string;
+  description?: string;
+  image?: string | SelectBoxOptionImage;
   disabled?: boolean;
 }
 
@@ -315,16 +362,16 @@ export interface SelectSelector {
   select: {
     multiple?: boolean;
     custom_value?: boolean;
-    mode?: "list" | "dropdown";
+    mode?: "list" | "dropdown" | "box";
     options: readonly string[] | readonly SelectOption[];
     translation_key?: string;
     sort?: boolean;
     reorder?: boolean;
+    box_max_columns?: number;
   } | null;
 }
 
 export interface SelectorSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   selector: {} | null;
 }
 
@@ -337,7 +384,6 @@ export interface StateSelector {
 }
 
 export interface BackupLocationSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   backup_location: {} | null;
 }
 
@@ -386,7 +432,6 @@ export interface TargetSelector {
 }
 
 export interface TemplateSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   template: {} | null;
 }
 
@@ -394,14 +439,11 @@ export interface ThemeSelector {
   theme: { include_default?: boolean } | null;
 }
 export interface TimeSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  time: {} | null;
+  time: { no_second?: boolean } | null;
 }
 
 export interface TriggerSelector {
-  trigger: {
-    path?: ItemPath;
-  } | null;
+  trigger: {} | null;
 }
 
 export interface TTSSelector {
@@ -420,9 +462,105 @@ export interface UiActionSelector {
 }
 
 export interface UiColorSelector {
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  ui_color: {} | null;
+  ui_color: {
+    default_color?: string;
+    include_none?: boolean;
+    include_state?: boolean;
+  } | null;
 }
+
+export interface UiStateContentSelector {
+  ui_state_content: {
+    entity_id?: string;
+    allow_name?: boolean;
+  } | null;
+}
+
+export const expandLabelTarget = (
+  hass: HomeAssistant,
+  labelId: string,
+  areas: HomeAssistant["areas"],
+  devices: HomeAssistant["devices"],
+  entities: HomeAssistant["entities"],
+  targetSelector: TargetSelector,
+  entitySources?: EntitySources
+) => {
+  const newEntities: string[] = [];
+  const newDevices: string[] = [];
+  const newAreas: string[] = [];
+
+  Object.values(areas).forEach((area) => {
+    if (
+      area.labels.includes(labelId) &&
+      areaMeetsTargetSelector(
+        hass,
+        entities,
+        devices,
+        area.area_id,
+        targetSelector,
+        entitySources
+      )
+    ) {
+      newAreas.push(area.area_id);
+    }
+  });
+
+  Object.values(devices).forEach((device) => {
+    if (
+      device.labels.includes(labelId) &&
+      deviceMeetsTargetSelector(
+        hass,
+        Object.values(entities),
+        device,
+        targetSelector,
+        entitySources
+      )
+    ) {
+      newDevices.push(device.id);
+    }
+  });
+
+  Object.values(entities).forEach((entity) => {
+    if (
+      entity.labels.includes(labelId) &&
+      entityMeetsTargetSelector(
+        hass.states[entity.entity_id],
+        targetSelector,
+        entitySources
+      )
+    ) {
+      newEntities.push(entity.entity_id);
+    }
+  });
+
+  return { areas: newAreas, devices: newDevices, entities: newEntities };
+};
+
+export const expandFloorTarget = (
+  hass: HomeAssistant,
+  floorId: string,
+  areas: HomeAssistant["areas"],
+  targetSelector: TargetSelector,
+  entitySources?: EntitySources
+) => {
+  const newAreas: string[] = [];
+  Object.values(areas).forEach((area) => {
+    if (
+      area.floor_id === floorId &&
+      areaMeetsTargetSelector(
+        hass,
+        hass.entities,
+        hass.devices,
+        area.area_id,
+        targetSelector,
+        entitySources
+      )
+    ) {
+      newAreas.push(area.area_id);
+    }
+  });
+  return { areas: newAreas };
+};
 
 export const expandAreaTarget = (
   hass: HomeAssistant,
@@ -529,7 +667,7 @@ export const areaMeetsTargetSelector = (
 
 export const deviceMeetsTargetSelector = (
   hass: HomeAssistant,
-  entityRegistry: EntityRegistryDisplayEntry[],
+  entityRegistry: EntityRegistryDisplayEntry[] | EntityRegistryEntry[],
   device: DeviceRegistryEntry,
   targetSelector: TargetSelector,
   entitySources?: EntitySources
@@ -579,11 +717,12 @@ export const entityMeetsTargetSelector = (
 export const filterSelectorDevices = (
   filterDevice: DeviceSelectorFilter,
   device: DeviceRegistryEntry,
-  deviceIntegrationLookup?: Record<string, string[]> | undefined
+  deviceIntegrationLookup?: Record<string, Set<string>> | undefined
 ): boolean => {
   const {
     manufacturer: filterManufacturer,
     model: filterModel,
+    model_id: filterModelId,
     integration: filterIntegration,
   } = filterDevice;
 
@@ -595,8 +734,12 @@ export const filterSelectorDevices = (
     return false;
   }
 
+  if (filterModelId && device.model_id !== filterModelId) {
+    return false;
+  }
+
   if (filterIntegration && deviceIntegrationLookup) {
-    if (!deviceIntegrationLookup?.[device.id]?.includes(filterIntegration)) {
+    if (!deviceIntegrationLookup?.[device.id]?.has(filterIntegration)) {
       return false;
     }
   }
@@ -711,4 +854,97 @@ export const handleLegacyDeviceSelector = (
   return {
     device: rest,
   };
+};
+
+export const computeCreateDomains = (
+  selector: EntitySelector | TargetSelector
+): undefined | string[] => {
+  let entityFilters: EntitySelectorFilter[] | undefined;
+
+  if ("target" in selector) {
+    entityFilters = ensureArray(selector.target?.entity);
+  } else if ("entity" in selector) {
+    if (selector.entity?.include_entities) {
+      return undefined;
+    }
+    entityFilters = ensureArray(selector.entity?.filter);
+  }
+  if (!entityFilters) {
+    return undefined;
+  }
+
+  const createDomains = entityFilters.flatMap((entityFilter) =>
+    !entityFilter.integration &&
+    !entityFilter.device_class &&
+    !entityFilter.supported_features &&
+    entityFilter.domain
+      ? ensureArray(entityFilter.domain).filter((domain) =>
+          isHelperDomain(domain)
+        )
+      : []
+  );
+
+  return [...new Set(createDomains)];
+};
+
+export const resolveEntityIDs = (
+  hass: HomeAssistant,
+  targetPickerValue: HassServiceTarget,
+  entities: HomeAssistant["entities"],
+  devices: HomeAssistant["devices"],
+  areas: HomeAssistant["areas"]
+): string[] => {
+  if (!targetPickerValue) {
+    return [];
+  }
+
+  const targetSelector = { target: {} };
+  const targetEntities = new Set(ensureArray(targetPickerValue.entity_id));
+  const targetDevices = new Set(ensureArray(targetPickerValue.device_id));
+  const targetAreas = new Set(ensureArray(targetPickerValue.area_id));
+  const targetFloors = new Set(ensureArray(targetPickerValue.floor_id));
+  const targetLabels = new Set(ensureArray(targetPickerValue.label_id));
+
+  targetLabels.forEach((labelId) => {
+    const expanded = expandLabelTarget(
+      hass,
+      labelId,
+      areas,
+      devices,
+      entities,
+      targetSelector
+    );
+    expanded.devices.forEach((id) => targetDevices.add(id));
+    expanded.entities.forEach((id) => targetEntities.add(id));
+    expanded.areas.forEach((id) => targetAreas.add(id));
+  });
+
+  targetFloors.forEach((floorId) => {
+    const expanded = expandFloorTarget(hass, floorId, areas, targetSelector);
+    expanded.areas.forEach((id) => targetAreas.add(id));
+  });
+
+  targetAreas.forEach((areaId) => {
+    const expanded = expandAreaTarget(
+      hass,
+      areaId,
+      devices,
+      entities,
+      targetSelector
+    );
+    expanded.devices.forEach((id) => targetDevices.add(id));
+    expanded.entities.forEach((id) => targetEntities.add(id));
+  });
+
+  targetDevices.forEach((deviceId) => {
+    const expanded = expandDeviceTarget(
+      hass,
+      deviceId,
+      entities,
+      targetSelector
+    );
+    expanded.entities.forEach((id) => targetEntities.add(id));
+  });
+
+  return Array.from(targetEntities);
 };

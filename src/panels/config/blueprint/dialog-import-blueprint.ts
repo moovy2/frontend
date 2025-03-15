@@ -3,18 +3,15 @@ import { mdiOpenInNew } from "@mdi/js";
 import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { fireEvent } from "../../../common/dom/fire_event";
-import "../../../components/ha-circular-progress";
+import "../../../components/ha-spinner";
 import { createCloseHeading } from "../../../components/ha-dialog";
 import "../../../components/ha-expansion-panel";
 import "../../../components/ha-markdown";
 import "../../../components/ha-alert";
 import "../../../components/ha-textfield";
 import type { HaTextField } from "../../../components/ha-textfield";
-import {
-  BlueprintImportResult,
-  importBlueprint,
-  saveBlueprint,
-} from "../../../data/blueprint";
+import type { BlueprintImportResult } from "../../../data/blueprint";
+import { importBlueprint, saveBlueprint } from "../../../data/blueprint";
 import { haStyleDialog } from "../../../resources/styles";
 import type { HomeAssistant } from "../../../types";
 
@@ -162,13 +159,12 @@ class DialogImportBlueprint extends LitElement {
                 .disabled=${this._importing}
               >
                 ${this._importing
-                  ? html`<ha-circular-progress
-                      indeterminate
+                  ? html`<ha-spinner
                       size="small"
                       .ariaLabel=${this.hass.localize(
                         "ui.panel.config.blueprint.add.importing"
                       )}
-                    ></ha-circular-progress>`
+                    ></ha-spinner>`
                   : ""}
                 ${this.hass.localize(
                   "ui.panel.config.blueprint.add.import_btn"
@@ -182,13 +178,12 @@ class DialogImportBlueprint extends LitElement {
                 .disabled=${this._saving || this._result.validation_errors}
               >
                 ${this._saving
-                  ? html`<ha-circular-progress
-                      indeterminate
+                  ? html`<ha-spinner
                       size="small"
                       .ariaLabel=${this.hass.localize(
                         "ui.panel.config.blueprint.add.saving"
                       )}
-                    ></ha-circular-progress>`
+                    ></ha-spinner>`
                   : ""}
                 ${this._result.exists
                   ? this.hass.localize(

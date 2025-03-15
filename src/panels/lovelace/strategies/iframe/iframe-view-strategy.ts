@@ -1,13 +1,13 @@
 import { ReactiveElement } from "lit";
 import { customElement } from "lit/decorators";
-import { LovelaceViewConfig } from "../../../../data/lovelace/config/view";
-import { IframeCardConfig } from "../../cards/types";
+import type { LovelaceViewConfig } from "../../../../data/lovelace/config/view";
+import type { IframeCardConfig } from "../../cards/types";
 
-export type IframeViewStrategyConfig = {
+export interface IframeViewStrategyConfig {
   type: "iframe";
   url: string;
   title?: string;
-};
+}
 
 @customElement("iframe-view-strategy")
 export class IframeViewStrategy extends ReactiveElement {

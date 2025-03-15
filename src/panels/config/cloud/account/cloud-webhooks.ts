@@ -1,19 +1,17 @@
-import { css, CSSResultGroup, html, LitElement, PropertyValues } from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { isComponentLoaded } from "../../../../common/config/is_component_loaded";
 import "../../../../components/ha-card";
-import "../../../../components/ha-circular-progress";
+import "../../../../components/ha-spinner";
 import "../../../../components/ha-settings-row";
 import "../../../../components/ha-switch";
-import {
-  CloudStatusLoggedIn,
-  CloudWebhook,
-  createCloudhook,
-  deleteCloudhook,
-} from "../../../../data/cloud";
-import { fetchWebhooks, Webhook, WebhookError } from "../../../../data/webhook";
+import type { CloudStatusLoggedIn, CloudWebhook } from "../../../../data/cloud";
+import { createCloudhook, deleteCloudhook } from "../../../../data/cloud";
+import type { Webhook, WebhookError } from "../../../../data/webhook";
+import { fetchWebhooks } from "../../../../data/webhook";
 import { haStyle } from "../../../../resources/styles";
-import { HomeAssistant } from "../../../../types";
+import type { HomeAssistant } from "../../../../types";
 import { showManageCloudhookDialog } from "../dialog-manage-cloudhook/show-dialog-manage-cloudhook";
 
 @customElement("cloud-webhooks")
@@ -24,9 +22,7 @@ export class CloudWebhooks extends LitElement {
 
   @property({ type: Boolean }) public narrow = false;
 
-  @state() private _cloudHooks?: {
-    [webhookId: string]: CloudWebhook;
-  };
+  @state() private _cloudHooks?: Record<string, CloudWebhook>;
 
   @state() private _localHooks?: Webhook[];
 
@@ -92,9 +88,7 @@ export class CloudWebhooks extends LitElement {
                       ${this._progress.includes(entry.webhook_id)
                         ? html`
                             <div class="progress">
-                              <ha-circular-progress
-                                indeterminate
-                              ></ha-circular-progress>
+                              <ha-spinner></ha-spinner>
                             </div>
                           `
                         : this._cloudHooks![entry.webhook_id]

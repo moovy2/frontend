@@ -1,17 +1,16 @@
-import { html, LitElement, PropertyValues, TemplateResult } from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, property, query } from "lit/decorators";
 import "../../../../src/components/ha-card";
 import "../../../../src/dialogs/more-info/more-info-content";
 import { getEntity } from "../../../../src/fake_data/entity";
-import {
-  MockHomeAssistant,
-  provideHass,
-} from "../../../../src/fake_data/provide_hass";
+import type { MockHomeAssistant } from "../../../../src/fake_data/provide_hass";
+import { provideHass } from "../../../../src/fake_data/provide_hass";
 import "../../components/demo-more-infos";
 import { ClimateEntityFeature } from "../../../../src/data/climate";
 
 const ENTITIES = [
-  getEntity("climate", "thermostat", "heat", {
+  getEntity("climate", "radiator", "heat", {
     friendly_name: "Basic heater",
     hvac_modes: ["heat", "off"],
     hvac_mode: "heat",
@@ -79,6 +78,24 @@ const ENTITIES = [
     min_humidity: 0,
     max_humidity: 100,
     humidity: 50,
+  }),
+  getEntity("climate", "towel_dryer", "heat", {
+    friendly_name: "Preset only heater",
+    hvac_modes: ["heat", "off"],
+    hvac_mode: "heat",
+    preset_modes: [
+      "none",
+      "frost_protection",
+      "eco",
+      "comfort",
+      "comfort-1",
+      "comfort-2",
+    ],
+    preset_mode: "eco",
+    current_temperature: null,
+    min_temp: 7,
+    max_temp: 35,
+    supported_features: ClimateEntityFeature.PRESET_MODE,
   }),
   getEntity("climate", "unavailable", "unavailable", {
     friendly_name: "Unavailable heater",

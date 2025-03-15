@@ -1,14 +1,17 @@
-import { html, PropertyValues } from "lit";
+import type { PropertyValues } from "lit";
+import { html } from "lit";
 import { customElement, state } from "lit/decorators";
+import type { Connection } from "home-assistant-js-websocket";
 import { isNavigationClick } from "../common/dom/is-navigation-click";
 import { navigate } from "../common/navigate";
 import { getStorageDefaultPanelUrlPath } from "../data/panel";
-import { WindowWithPreloads } from "../data/preloads";
-import { getRecorderInfo, RecorderInfo } from "../data/recorder";
+import type { WindowWithPreloads } from "../data/preloads";
+import type { RecorderInfo } from "../data/recorder";
+import { getRecorderInfo } from "../data/recorder";
 import "../resources/custom-card-support";
 import { HassElement } from "../state/hass-element";
 import QuickBarMixin from "../state/quick-bar-mixin";
-import { HomeAssistant, Route } from "../types";
+import type { HomeAssistant, Route } from "../types";
 import { storeState } from "../util/ha-pref-storage";
 import {
   removeLaunchScreen,
@@ -20,6 +23,7 @@ import {
 } from "../util/register-service-worker";
 import "./ha-init-page";
 import "./home-assistant-main";
+import { storage } from "../common/decorators/storage";
 
 const useHash = __DEMO__;
 const curPath = () =>
@@ -38,6 +42,7 @@ export class HomeAssistantAppEl extends QuickBarMixin(HassElement) {
 
   private _panelUrl: string;
 
+  @storage({ key: "ha-version", state: false, subscribe: false })
   private _haVersion?: string;
 
   private _hiddenTimeout?: number;
@@ -169,10 +174,6 @@ export class HomeAssistantAppEl extends QuickBarMixin(HassElement) {
     // @ts-ignore
     this._loadHassTranslations(this.hass!.language, "entity");
 
-    // Backwards compatibility for custom integrations
-    // @ts-ignore
-    this._loadHassTranslations(this.hass!.language, "state");
-
     document.addEventListener(
       "visibilitychange",
       () => this._checkVisibility(),
@@ -184,9 +185,15 @@ export class HomeAssistantAppEl extends QuickBarMixin(HassElement) {
 
   protected hassReconnected() {
     super.hassReconnected();
+    this._checkUpdate(this.hass!.connection);
+  }
 
+  private _checkUpdate(connection: Connection) {
+    const oldVersion = this._haVersion;
+    const currentVersion = connection.haVersion;
     // If backend has been upgraded, make sure we update frontend
-    if (this.hass!.connection.haVersion !== this._haVersion) {
+    if (currentVersion !== oldVersion) {
+      this._haVersion = currentVersion;
       if (supportsServiceWorker()) {
         navigator.serviceWorker.getRegistration().then((registration) => {
           if (registration) {
@@ -204,24 +211,31 @@ export class HomeAssistantAppEl extends QuickBarMixin(HassElement) {
   }
 
   protected async checkDataBaseMigration() {
-    if (this.hass?.config?.components.includes("recorder")) {
-      let recorderInfoProm: Promise<RecorderInfo> | undefined;
-      const preloadWindow = window as WindowWithPreloads;
-      // On first load, we speed up loading page by having recorderInfoProm ready
-      if (preloadWindow.recorderInfoProm) {
-        recorderInfoProm = preloadWindow.recorderInfoProm;
-        preloadWindow.recorderInfoProm = undefined;
-      }
-      const info = await (recorderInfoProm ||
-        getRecorderInfo(this.hass.connection));
-      this._databaseMigration =
-        info.migration_in_progress && !info.migration_is_live;
-      if (this._databaseMigration) {
-        // check every 5 seconds if the migration is done
-        setTimeout(() => this.checkDataBaseMigration(), 5000);
-      }
-    } else {
+    if (__DEMO__) {
       this._databaseMigration = false;
+      return;
+    }
+
+    let recorderInfoProm: Promise<RecorderInfo> | undefined;
+    const preloadWindow = window as WindowWithPreloads;
+    // On first load, we speed up loading page by having recorderInfoProm ready
+    if (preloadWindow.recorderInfoProm) {
+      recorderInfoProm = preloadWindow.recorderInfoProm;
+      preloadWindow.recorderInfoProm = undefined;
+    }
+    const info = await (
+      recorderInfoProm || getRecorderInfo(this.hass!.connection)
+    ).catch((err) => {
+      // If the command failed with code unknown_command, recorder is not enabled,
+      // otherwise re-throw the error
+      if (err.code !== "unknown_command") throw err;
+      return { migration_in_progress: false, migration_is_live: false };
+    });
+    this._databaseMigration =
+      info.migration_in_progress && !info.migration_is_live;
+    if (this._databaseMigration) {
+      // check every 5 seconds if the migration is done
+      setTimeout(() => this.checkDataBaseMigration(), 5000);
     }
   }
 
@@ -239,9 +253,9 @@ export class HomeAssistantAppEl extends QuickBarMixin(HassElement) {
       }
 
       const { auth, conn } = result;
-      this._haVersion = conn.haVersion;
+      this._checkUpdate(conn);
       this.initializeHass(auth, conn);
-    } catch (err: any) {
+    } catch (_err: any) {
       this._renderInitInfo(true);
     }
   }

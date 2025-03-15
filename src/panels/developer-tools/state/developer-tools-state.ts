@@ -3,14 +3,15 @@ import {
   mdiInformationOutline,
   mdiRefresh,
 } from "@mdi/js";
-import { addHours } from "date-fns/esm";
-import {
+import { addHours } from "date-fns";
+import type {
   HassEntities,
   HassEntity,
   HassEntityAttributeBase,
 } from "home-assistant-js-websocket";
 import { dump } from "js-yaml";
-import { CSSResultGroup, LitElement, css, html, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { formatDateTimeWithSeconds } from "../../../common/datetime/format_date_time";
@@ -31,33 +32,32 @@ import type { HaYamlEditor } from "../../../components/ha-yaml-editor";
 import "../../../components/search-input";
 import { showAlertDialog } from "../../../dialogs/generic/show-dialog-box";
 import { haStyle } from "../../../resources/styles";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 
 @customElement("developer-tools-state")
 class HaPanelDevState extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @state() private _error: string = "";
+  @state() private _error = "";
 
-  @state() private _entityId: string = "";
+  @state() private _entityId = "";
 
-  @state() private _entityFilter: string = "";
+  @state() private _entityFilter = "";
 
-  @state() private _stateFilter: string = "";
+  @state() private _stateFilter = "";
 
-  @state() private _attributeFilter: string = "";
+  @state() private _attributeFilter = "";
 
   @state() private _entity?: HassEntity;
 
-  @state() private _state: string = "";
+  @state() private _state = "";
 
-  @state() private _stateAttributes: HassEntityAttributeBase & {
-    [key: string]: any;
-  } = {};
+  @state() private _stateAttributes: HassEntityAttributeBase &
+    Record<string, any> = {};
 
   @state() private _expanded = false;
 
-  @state() private _validJSON: boolean = true;
+  @state() private _validJSON = true;
 
   @storage({
     key: "devToolsShowAttributes",
@@ -128,9 +128,11 @@ class HaPanelDevState extends LitElement {
               allow-custom-entity
               item-label-path="entity_id"
             ></ha-entity-picker>
-            <ha-tip .hass=${this.hass}
-              >${this.hass.localize("ui.tips.key_e_hint")}</ha-tip
-            >
+            ${this.hass.enableShortcuts
+              ? html`<ha-tip .hass=${this.hass}
+                  >${this.hass.localize("ui.tips.key_e_hint")}</ha-tip
+                >`
+              : nothing}
             <ha-textfield
               .label=${this.hass.localize(
                 "ui.panel.developer-tools.tabs.states.state"
@@ -321,10 +323,10 @@ class HaPanelDevState extends LitElement {
     `;
   }
 
-  private _copyEntity(ev) {
+  private async _copyEntity(ev) {
     ev.preventDefault();
     const entity = (ev.currentTarget! as any).entity;
-    copyToClipboard(entity.entity_id);
+    await copyToClipboard(entity.entity_id);
   }
 
   private _entitySelected(ev) {

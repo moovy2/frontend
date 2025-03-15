@@ -1,14 +1,15 @@
 import "@material/mwc-button/mwc-button";
 import { mdiCheckCircle, mdiCloseCircle } from "@mdi/js";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { fireEvent } from "../../../../../common/dom/fire_event";
-import "../../../../../components/ha-circular-progress";
+import "../../../../../components/ha-spinner";
 import { createCloseHeading } from "../../../../../components/ha-dialog";
 import { interviewMatterNode } from "../../../../../data/matter";
 import { haStyleDialog } from "../../../../../resources/styles";
-import { HomeAssistant } from "../../../../../types";
-import { MatterReinterviewNodeDialogParams } from "./show-dialog-matter-reinterview-node";
+import type { HomeAssistant } from "../../../../../types";
+import type { MatterReinterviewNodeDialogParams } from "./show-dialog-matter-reinterview-node";
 
 @customElement("dialog-matter-reinterview-node")
 class DialogMatterReinterviewNode extends LitElement {
@@ -61,7 +62,7 @@ class DialogMatterReinterviewNode extends LitElement {
           : this._status === "started"
             ? html`
                 <div class="flex-container">
-                  <ha-circular-progress indeterminate></ha-circular-progress>
+                  <ha-spinner></ha-spinner>
                   <div class="status">
                     <p>
                       <b>
@@ -132,7 +133,7 @@ class DialogMatterReinterviewNode extends LitElement {
     try {
       await interviewMatterNode(this.hass, this.device_id!);
       this._status = "finished";
-    } catch (err) {
+    } catch (_err) {
       this._status = "failed";
     }
   }
@@ -177,7 +178,7 @@ class DialogMatterReinterviewNode extends LitElement {
           height: 48px;
         }
 
-        .flex-container ha-circular-progress,
+        .flex-container ha-spinner,
         .flex-container ha-svg-icon {
           margin-right: 20px;
         }

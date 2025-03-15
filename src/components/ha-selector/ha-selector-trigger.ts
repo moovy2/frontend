@@ -1,9 +1,11 @@
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
-import { Trigger } from "../../data/automation";
-import { TriggerSelector } from "../../data/selector";
+import memoizeOne from "memoize-one";
+import type { Trigger } from "../../data/automation";
+import { migrateAutomationTrigger } from "../../data/automation";
+import type { TriggerSelector } from "../../data/selector";
 import "../../panels/config/automation/trigger/ha-automation-trigger";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 
 @customElement("ha-selector-trigger")
 export class HaTriggerSelector extends LitElement {
@@ -17,35 +19,35 @@ export class HaTriggerSelector extends LitElement {
 
   @property({ type: Boolean, reflect: true }) public disabled = false;
 
+  private _triggers = memoizeOne((trigger: Trigger | undefined) => {
+    if (!trigger) {
+      return [];
+    }
+    return migrateAutomationTrigger(trigger);
+  });
+
   protected render() {
     return html`
       ${this.label ? html`<label>${this.label}</label>` : nothing}
       <ha-automation-trigger
         .disabled=${this.disabled}
-        .triggers=${this.value || []}
+        .triggers=${this._triggers(this.value)}
         .hass=${this.hass}
-        .path=${this.selector.trigger?.path}
       ></ha-automation-trigger>
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-automation-trigger {
-        display: block;
-        margin-bottom: 16px;
-      }
-      :host([disabled]) ha-automation-trigger {
-        opacity: var(--light-disabled-opacity);
-        pointer-events: none;
-      }
-      label {
-        display: block;
-        margin-bottom: 4px;
-        font-weight: 500;
-      }
-    `;
-  }
+  static styles = css`
+    ha-automation-trigger {
+      display: block;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+  `;
 }
 
 declare global {

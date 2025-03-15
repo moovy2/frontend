@@ -1,8 +1,12 @@
-import { css, CSSResultGroup, html, LitElement, PropertyValues } from "lit";
+import type { PropertyValues } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../../common/dom/fire_event";
-import { LocalizeFunc, LocalizeKeys } from "../../common/translations/localize";
+import type {
+  LocalizeFunc,
+  LocalizeKeys,
+} from "../../common/translations/localize";
 import type { HomeAssistant } from "../../types";
 import "../ha-alert";
 import "../ha-form/ha-form";
@@ -57,8 +61,18 @@ const SELECTOR_SCHEMAS = {
       name: "enable_day",
       selector: { boolean: {} },
     },
+    {
+      name: "enable_millisecond",
+      selector: { boolean: {} },
+    },
   ] as const,
   entity: [
+    {
+      name: "multiple",
+      selector: { boolean: {} },
+    },
+  ] as const,
+  floor: [
     {
       name: "multiple",
       selector: { boolean: {} },
@@ -257,39 +271,37 @@ export class HaSelectorSelector extends LitElement {
       `ui.components.selectors.selector.${schema.name}` as LocalizeKeys
     ) || schema.name;
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        --expansion-panel-summary-padding: 0 16px;
-      }
-      ha-alert {
-        display: block;
-        margin-bottom: 16px;
-      }
-      ha-card {
-        margin: 0 0 16px 0;
-      }
-      ha-card.disabled {
-        pointer-events: none;
-        color: var(--disabled-text-color);
-      }
-      .card-content {
-        padding: 0px 16px 16px 16px;
-      }
-      .title {
-        font-size: 16px;
-        padding-top: 16px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 16px;
-        padding-left: 16px;
-        padding-right: 4px;
-        padding-inline-start: 16px;
-        padding-inline-end: 4px;
-        white-space: nowrap;
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      --expansion-panel-summary-padding: 0 16px;
+    }
+    ha-alert {
+      display: block;
+      margin-bottom: 16px;
+    }
+    ha-card {
+      margin: 0 0 16px 0;
+    }
+    ha-card.disabled {
+      pointer-events: none;
+      color: var(--disabled-text-color);
+    }
+    .card-content {
+      padding: 0px 16px 16px 16px;
+    }
+    .title {
+      font-size: 16px;
+      padding-top: 16px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 16px;
+      padding-left: 16px;
+      padding-right: 4px;
+      padding-inline-start: 16px;
+      padding-inline-end: 4px;
+      white-space: nowrap;
+    }
+  `;
 }
 
 declare global {

@@ -1,25 +1,24 @@
 import "@material/mwc-button/mwc-button";
 import "@material/mwc-list/mwc-list";
-import { UnsubscribeFunc } from "home-assistant-js-websocket";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import type { UnsubscribeFunc } from "home-assistant-js-websocket";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../../../common/dom/fire_event";
 import "../../../components/entity/state-badge";
 import "../../../components/ha-alert";
-import "../../../components/ha-circular-progress";
+import "../../../components/ha-spinner";
 import "../../../components/ha-icon-next";
 import "../../../components/ha-list-item";
+import type { DeviceRegistryEntry } from "../../../data/device_registry";
 import {
   computeDeviceName,
-  DeviceRegistryEntry,
   subscribeDeviceRegistry,
 } from "../../../data/device_registry";
-import {
-  EntityRegistryEntry,
-  subscribeEntityRegistry,
-} from "../../../data/entity_registry";
+import type { EntityRegistryEntry } from "../../../data/entity_registry";
+import { subscribeEntityRegistry } from "../../../data/entity_registry";
 import type { UpdateEntity } from "../../../data/update";
 import { SubscribeMixin } from "../../../mixins/subscribe-mixin";
 import type { HomeAssistant } from "../../../types";
@@ -104,14 +103,14 @@ class HaConfigUpdates extends SubscribeMixin(LitElement) {
                 )}
               ></state-badge>
               ${this.narrow && entity.attributes.in_progress
-                ? html`<ha-circular-progress
-                    indeterminate
+                ? html`<ha-spinner
                     slot="graphic"
                     class="absolute"
+                    size="small"
                     .ariaLabel=${this.hass.localize(
                       "ui.panel.config.updates.update_in_progress"
                     )}
-                  ></ha-circular-progress>`
+                  ></ha-spinner>`
                 : ""}
               <span
                 >${deviceEntry
@@ -126,14 +125,13 @@ class HaConfigUpdates extends SubscribeMixin(LitElement) {
               </span>
               ${!this.narrow
                 ? entity.attributes.in_progress
-                  ? html`<ha-circular-progress
-                      indeterminate
+                  ? html`<ha-spinner
                       size="small"
                       slot="meta"
                       .ariaLabel=${this.hass.localize(
                         "ui.panel.config.updates.update_in_progress"
                       )}
-                    ></ha-circular-progress>`
+                    ></ha-spinner>`
                   : html`<ha-icon-next slot="meta"></ha-icon-next>`
                 : ""}
             </ha-list-item>
@@ -191,10 +189,10 @@ class HaConfigUpdates extends SubscribeMixin(LitElement) {
           cursor: pointer;
           font-size: 16px;
         }
-        ha-circular-progress.absolute {
+        ha-spinner.absolute {
           position: absolute;
-          width: 40px;
-          height: 40px;
+          width: 28px;
+          height: 28px;
         }
         state-badge.updating {
           opacity: 0.5;

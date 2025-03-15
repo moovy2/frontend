@@ -1,4 +1,4 @@
-import { ThemeVars } from "../../data/ws-themes";
+import type { ThemeVars } from "../../data/ws-themes";
 import { darkStyles, derivedStyles } from "../../resources/styles-data";
 import type { HomeAssistant } from "../../types";
 import {
@@ -13,7 +13,7 @@ import { labBrighten, labDarken } from "../color/lab";
 import { rgbContrast } from "../color/rgb";
 
 interface ProcessedTheme {
-  keys: { [key: string]: "" };
+  keys: Record<string, "">;
   styles: Record<string, string>;
 }
 
@@ -186,7 +186,7 @@ const processTheme = (
       const prefixedRgbKey = `--${rgbKey}`;
       styles[prefixedRgbKey] = rgbValue;
       keys[prefixedRgbKey] = "";
-    } catch (err: any) {
+    } catch (_err: any) {
       continue;
     }
   }

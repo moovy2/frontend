@@ -1,16 +1,14 @@
-import {
+import type {
   LovelaceConfig,
   LovelaceRawConfig,
-  isStrategyDashboard,
 } from "../../../data/lovelace/config/types";
-import { LovelaceStrategyConfig } from "../../../data/lovelace/config/strategy";
-import {
-  LovelaceViewConfig,
-  isStrategyView,
-} from "../../../data/lovelace/config/view";
-import { AsyncReturnType, HomeAssistant } from "../../../types";
+import { isStrategyDashboard } from "../../../data/lovelace/config/types";
+import type { LovelaceStrategyConfig } from "../../../data/lovelace/config/strategy";
+import type { LovelaceViewConfig } from "../../../data/lovelace/config/view";
+import { isStrategyView } from "../../../data/lovelace/config/view";
+import type { AsyncReturnType, HomeAssistant } from "../../../types";
 import { cleanLegacyStrategyConfig, isLegacyStrategy } from "./legacy-strategy";
-import {
+import type {
   LovelaceDashboardStrategy,
   LovelaceSectionStrategy,
   LovelaceStrategy,
@@ -26,6 +24,7 @@ const STRATEGIES: Record<LovelaceStrategyConfigType, Record<string, any>> = {
       import("./original-states/original-states-dashboard-strategy"),
     map: () => import("./map/map-dashboard-strategy"),
     iframe: () => import("./iframe/iframe-dashboard-strategy"),
+    areas: () => import("./areas/areas-dashboard-strategy"),
   },
   view: {
     "original-states": () =>
@@ -33,17 +32,19 @@ const STRATEGIES: Record<LovelaceStrategyConfigType, Record<string, any>> = {
     energy: () => import("../../energy/strategies/energy-view-strategy"),
     map: () => import("./map/map-view-strategy"),
     iframe: () => import("./iframe/iframe-view-strategy"),
+    area: () => import("./area/area-view-strategy"),
+    areas: () => import("./areas/areas-view-strategy"),
   },
   section: {},
 };
 
 export type LovelaceStrategyConfigType = "dashboard" | "view" | "section";
 
-type Strategies = {
+interface Strategies {
   dashboard: LovelaceDashboardStrategy;
   view: LovelaceViewStrategy;
   section: LovelaceSectionStrategy;
-};
+}
 
 type StrategyConfig<T extends LovelaceStrategyConfigType> = AsyncReturnType<
   Strategies[T]["generate"]

@@ -1,4 +1,5 @@
-import { css, CSSResultGroup, html, LitElement, PropertyValues } from "lit";
+import type { PropertyValues } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { styleMap } from "lit/directives/style-map";
 import memoizeOne from "memoize-one";
@@ -7,14 +8,16 @@ import { supportsFeature } from "../../common/entity/supports-feature";
 import "../../components/ha-control-select";
 import type { ControlSelectOption } from "../../components/ha-control-select";
 import "../../components/ha-control-slider";
-import {
-  ALARM_MODES,
+import type {
   AlarmControlPanelEntity,
   AlarmMode,
 } from "../../data/alarm_control_panel";
+import {
+  ALARM_MODES,
+  setProtectedAlarmControlPanelMode,
+} from "../../data/alarm_control_panel";
 import { UNAVAILABLE } from "../../data/entity";
-import { showEnterCodeDialog } from "../../dialogs/enter-code/show-enter-code-dialog";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 
 @customElement("ha-state-control-alarm_control_panel-modes")
 export class HaStateControlAlarmControlPanelModes extends LitElement {
@@ -44,37 +47,12 @@ export class HaStateControlAlarmControlPanelModes extends LitElement {
   }
 
   private async _setMode(mode: AlarmMode) {
-    const { service } = ALARM_MODES[mode];
-
-    let code: string | undefined;
-
-    if (
-      (mode !== "disarmed" &&
-        this.stateObj!.attributes.code_arm_required &&
-        this.stateObj!.attributes.code_format) ||
-      (mode === "disarmed" && this.stateObj!.attributes.code_format)
-    ) {
-      const disarm = mode === "disarmed";
-
-      const response = await showEnterCodeDialog(this, {
-        codeFormat: this.stateObj!.attributes.code_format,
-        title: this.hass!.localize(
-          `ui.card.alarm_control_panel.${disarm ? "disarm" : "arm"}`
-        ),
-        submitText: this.hass!.localize(
-          `ui.card.alarm_control_panel.${disarm ? "disarmn" : "arm"}`
-        ),
-      });
-      if (response == null) {
-        throw new Error("cancel");
-      }
-      code = response;
-    }
-
-    await this.hass!.callService("alarm_control_panel", service, {
-      entity_id: this.stateObj!.entity_id,
-      code,
-    });
+    await setProtectedAlarmControlPanelMode(
+      this,
+      this.hass!,
+      this.stateObj!,
+      mode
+    );
   }
 
   private async _valueChanged(ev: CustomEvent) {
@@ -87,7 +65,7 @@ export class HaStateControlAlarmControlPanelModes extends LitElement {
 
     try {
       await this._setMode(mode);
-    } catch (err) {
+    } catch (_err) {
       this._currentMode = oldMode;
     }
   }
@@ -122,20 +100,18 @@ export class HaStateControlAlarmControlPanelModes extends LitElement {
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-control-select {
-        height: 45vh;
-        max-height: max(320px, var(--modes-count, 1) * 80px);
-        min-height: max(200px, var(--modes-count, 1) * 80px);
-        --control-select-thickness: 100px;
-        --control-select-border-radius: 24px;
-        --control-select-color: var(--primary-color);
-        --control-select-background: var(--disabled-color);
-        --control-select-background-opacity: 0.2;
-      }
-    `;
-  }
+  static styles = css`
+    ha-control-select {
+      height: 45vh;
+      max-height: max(320px, var(--modes-count, 1) * 80px);
+      min-height: max(200px, var(--modes-count, 1) * 80px);
+      --control-select-thickness: 130px;
+      --control-select-border-radius: 36px;
+      --control-select-color: var(--primary-color);
+      --control-select-background: var(--disabled-color);
+      --control-select-background-opacity: 0.2;
+    }
+  `;
 }
 
 declare global {

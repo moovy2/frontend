@@ -1,9 +1,10 @@
-import { css, html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property } from "lit/decorators";
 import "../../../../components/ha-card";
 import "../../../../components/ha-alert";
 import "../../../../components/ha-button";
-import "../../../../components/ha-circular-progress";
+import "../../../../components/ha-spinner";
 import "../../../../components/ha-expansion-panel";
 import type { PipelineRun } from "../../../../data/assist_pipeline";
 import type { HomeAssistant } from "../../../../types";
@@ -72,7 +73,7 @@ const renderProgress = (
   hass: HomeAssistant,
   pipelineRun: PipelineRun,
   stage: PipelineRun["stage"],
-  start_suffix: string = "-start"
+  start_suffix = "-start"
 ) => {
   const startEvent = pipelineRun.events.find(
     (ev) => ev.type === `${stage}` + start_suffix
@@ -89,9 +90,7 @@ const renderProgress = (
     if ("error" in pipelineRun) {
       return html`❌`;
     }
-    return html`
-      <ha-circular-progress size="small" indeterminate></ha-circular-progress>
-    `;
+    return html` <ha-spinner size="small"></ha-spinner> `;
   }
 
   const duration =
@@ -147,7 +146,7 @@ export class AssistPipelineDebug extends LitElement {
         ) || "ready"
       : "ready";
 
-    const messages: Array<{ from: string; text: string }> = [];
+    const messages: { from: string; text: string }[] = [];
 
     const userMessage =
       (this.pipelineRun.init_options &&
@@ -306,6 +305,18 @@ export class AssistPipelineDebug extends LitElement {
                                   </div>`
                                 : ""}`
                           : ""}
+                        <div class="row">
+                          <div>Prefer handling locally</div>
+                          <div>
+                            ${this.pipelineRun.intent.prefer_local_intents}
+                          </div>
+                        </div>
+                        <div class="row">
+                          <div>Processed locally</div>
+                          <div>
+                            ${this.pipelineRun.intent.processed_locally}
+                          </div>
+                        </div>
                         ${dataMinusKeysRender(
                           this.pipelineRun.intent,
                           INTENT_DATA
@@ -352,8 +363,8 @@ export class AssistPipelineDebug extends LitElement {
         <ha-expansion-panel>
           <span slot="header">Raw</span>
           <ha-yaml-editor
-            readOnly
-            autoUpdate
+            read-only
+            auto-update
             .value=${this.pipelineRun}
           ></ha-yaml-editor>
         </ha-expansion-panel>

@@ -1,14 +1,6 @@
-/* eslint-disable lit/prefer-static-styles */
 import { mdiEye, mdiEyeOff } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { PropertyValues, TemplateResult } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { fireEvent } from "../../common/dom/fire_event";
 import "../ha-icon-button";
@@ -19,7 +11,10 @@ import type {
   HaFormStringData,
   HaFormStringSchema,
 } from "./types";
-import { LocalizeFunc, LocalizeKeys } from "../../common/translations/localize";
+import type {
+  LocalizeFunc,
+  LocalizeKeys,
+} from "../../common/translations/localize";
 
 const MASKED_FIELDS = ["password", "secret", "token"];
 
@@ -27,7 +22,8 @@ const MASKED_FIELDS = ["password", "secret", "token"];
 export class HaFormString extends LitElement implements HaFormElement {
   @property({ attribute: false }) public localize?: LocalizeFunc;
 
-  @property() public localizeBaseKey = "ui.components.selectors.text";
+  @property({ attribute: false }) public localizeBaseKey =
+    "ui.components.selectors.text";
 
   @property({ attribute: false }) public schema!: HaFormStringSchema;
 
@@ -84,7 +80,6 @@ export class HaFormString extends LitElement implements HaFormElement {
     if (!this.isPassword) return nothing;
     return html`
       <ha-icon-button
-        toggles
         .label=${this.localize?.(
           `${this.localizeBaseKey}.${
             this.unmaskedPassword ? "hide_password" : "show_password"
@@ -135,31 +130,29 @@ export class HaFormString extends LitElement implements HaFormElement {
     return MASKED_FIELDS.some((field) => this.schema.name.includes(field));
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: block;
-        position: relative;
-      }
-      :host([own-margin]) {
-        margin-bottom: 5px;
-      }
-      ha-textfield {
-        display: block;
-      }
-      ha-icon-button {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        inset-inline-start: initial;
-        inset-inline-end: 8px;
-        --mdc-icon-button-size: 40px;
-        --mdc-icon-size: 20px;
-        color: var(--secondary-text-color);
-        direction: var(--direction);
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      display: block;
+      position: relative;
+    }
+    :host([own-margin]) {
+      margin-bottom: 5px;
+    }
+    ha-textfield {
+      display: block;
+    }
+    ha-icon-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      inset-inline-start: initial;
+      inset-inline-end: 8px;
+      --mdc-icon-button-size: 40px;
+      --mdc-icon-size: 20px;
+      color: var(--secondary-text-color);
+      direction: var(--direction);
+    }
+  `;
 }
 
 declare global {

@@ -1,19 +1,23 @@
 import "@material/mwc-button";
 import { mdiCastConnected, mdiCast } from "@mdi/js";
-import {
+import type {
   Auth,
   Connection,
+  getAuthOptions,
+} from "home-assistant-js-websocket";
+import {
   createConnection,
   ERR_CANNOT_CONNECT,
   ERR_HASS_HOST_REQUIRED,
   ERR_INVALID_AUTH,
   ERR_INVALID_HTTPS_TO_HTTP,
   getAuth,
-  getAuthOptions,
 } from "home-assistant-js-websocket";
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators";
-import { CastManager, getCastManager } from "../../../../src/cast/cast_manager";
+import type { CastManager } from "../../../../src/cast/cast_manager";
+import { getCastManager } from "../../../../src/cast/cast_manager";
 import { castSendShowDemo } from "../../../../src/cast/receiver_messages";
 import {
   loadTokens,
@@ -211,7 +215,7 @@ export class HcConnect extends LitElement {
     let url: URL;
     try {
       url = new URL(value);
-    } catch (err: any) {
+    } catch (_err: any) {
       this.error = "Invalid URL";
       return;
     }
@@ -248,7 +252,7 @@ export class HcConnect extends LitElement {
       this.loading = false;
       return;
     } finally {
-      // Clear url if we have a auth callback in url.
+      // Clear url if we have an auth callback in url.
       if (location.search.includes("auth_callback=1")) {
         history.replaceState(null, "", location.pathname);
       }
@@ -284,41 +288,39 @@ export class HcConnect extends LitElement {
     try {
       saveTokens(null);
       location.reload();
-    } catch (err: any) {
+    } catch (_err: any) {
       alert("Unable to log out!");
     }
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      .card-content a {
-        color: var(--primary-color);
-      }
-      .card-actions a {
-        text-decoration: none;
-      }
-      .error {
-        color: red;
-        font-weight: bold;
-      }
+  static styles = css`
+    .card-content a {
+      color: var(--primary-color);
+    }
+    .card-actions a {
+      text-decoration: none;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
 
-      .error a {
-        color: darkred;
-      }
+    .error a {
+      color: darkred;
+    }
 
-      mwc-button ha-svg-icon {
-        margin-left: 8px;
-      }
+    mwc-button ha-svg-icon {
+      margin-left: 8px;
+    }
 
-      .spacer {
-        flex: 1;
-      }
+    .spacer {
+      flex: 1;
+    }
 
-      ha-textfield {
-        width: 100%;
-      }
-    `;
-  }
+    ha-textfield {
+      width: 100%;
+    }
+  `;
 }
 
 declare global {

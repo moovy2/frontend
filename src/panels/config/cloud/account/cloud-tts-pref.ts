@@ -1,6 +1,6 @@
 import "@material/mwc-button";
 import "@material/mwc-list/mwc-list-item";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { fireEvent } from "../../../../common/dom/fire_event";
@@ -9,9 +9,10 @@ import "../../../../components/ha-select";
 import "../../../../components/ha-svg-icon";
 import "../../../../components/ha-switch";
 import "../../../../components/ha-language-picker";
-import { CloudStatusLoggedIn, updateCloudPref } from "../../../../data/cloud";
+import type { CloudStatusLoggedIn } from "../../../../data/cloud";
+import { updateCloudPref } from "../../../../data/cloud";
+import type { CloudTTSInfo } from "../../../../data/cloud/tts";
 import {
-  CloudTTSInfo,
   getCloudTTSInfo,
   getCloudTtsLanguages,
   getCloudTtsSupportedVoices,
@@ -45,9 +46,12 @@ export class CloudTTSPref extends LitElement {
         header=${this.hass.localize("ui.panel.config.cloud.account.tts.title")}
       >
         <div class="card-content">
-          ${this.hass.localize("ui.panel.config.cloud.account.tts.info", {
-            service: '"tts.cloud_say"',
-          })}
+          ${this.hass.localize(
+            "ui.panel.config.cloud.account.tts.description",
+            {
+              service: '"tts.cloud_say"',
+            }
+          )}
           <br /><br />
           <div class="row">
             <ha-language-picker
@@ -118,7 +122,7 @@ export class CloudTTSPref extends LitElement {
     });
   }
 
-  async _handleLanguageChange(ev) {
+  private async _handleLanguageChange(ev) {
     if (ev.detail.value === this.cloudStatus!.prefs.tts_default_voice[0]) {
       return;
     }
@@ -147,7 +151,7 @@ export class CloudTTSPref extends LitElement {
     }
   }
 
-  async _handleVoiceChange(ev) {
+  private async _handleVoiceChange(ev) {
     if (ev.target.value === this.cloudStatus!.prefs.tts_default_voice[1]) {
       return;
     }
@@ -171,40 +175,39 @@ export class CloudTTSPref extends LitElement {
     }
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      a {
-        color: var(--primary-color);
-      }
-      .example {
-        position: absolute;
-        right: 16px;
-        inset-inline-end: 16px;
-        inset-inline-start: initial;
-        top: 16px;
-      }
-      .row {
-        display: flex;
-      }
-      .row > * {
-        flex: 1;
-      }
-      .row > *:first-child {
-        margin-right: 8px;
-        margin-inline-end: 8px;
-        margin-inline-start: initial;
-      }
-      .row > *:last-child {
-        margin-left: 8px;
-        margin-inline-start: 8px;
-        margin-inline-end: initial;
-      }
-      .card-actions {
-        display: flex;
-        flex-direction: row-reverse;
-      }
-    `;
-  }
+  static styles = css`
+    a {
+      color: var(--primary-color);
+    }
+    .example {
+      position: absolute;
+      right: 16px;
+      inset-inline-end: 16px;
+      inset-inline-start: initial;
+      top: 16px;
+    }
+    .row {
+      display: flex;
+    }
+    .row > * {
+      flex: 1;
+      width: 0;
+    }
+    .row > *:first-child {
+      margin-right: 8px;
+      margin-inline-end: 8px;
+      margin-inline-start: initial;
+    }
+    .row > *:last-child {
+      margin-left: 8px;
+      margin-inline-start: 8px;
+      margin-inline-end: initial;
+    }
+    .card-actions {
+      display: flex;
+      flex-direction: row-reverse;
+    }
+  `;
 }
 
 declare global {

@@ -1,4 +1,4 @@
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
 import { fireEvent } from "../../common/dom/fire_event";
@@ -11,7 +11,7 @@ class HaStatisticsPicker extends LitElement {
 
   @property({ type: Array }) public value?: string[];
 
-  @property({ type: Array }) public statisticIds?: string[];
+  @property({ attribute: false, type: Array }) public statisticIds?: string[];
 
   @property({ attribute: "statistic-types" })
   public statisticTypes?: "mean" | "sum";
@@ -171,19 +171,17 @@ class HaStatisticsPicker extends LitElement {
     this._updateStatistics([...currentEntities, toAdd]);
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        width: 200px;
-        display: block;
-      }
-      ha-statistic-picker {
-        display: block;
-        width: 100%;
-        margin-top: 8px;
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      width: 200px;
+      display: block;
+    }
+    ha-statistic-picker {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+    }
+  `;
 }
 
 declare global {

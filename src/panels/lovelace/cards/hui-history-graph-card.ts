@@ -1,31 +1,27 @@
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
-import { mdiChevronRight } from "@mdi/js";
+import type { PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { isComponentLoaded } from "../../../common/config/is_component_loaded";
 import "../../../components/chart/state-history-charts";
 import "../../../components/ha-alert";
 import "../../../components/ha-card";
-import "../../../components/ha-icon-button";
+import "../../../components/ha-icon-next";
 import {
-  HistoryResult,
   computeHistory,
   subscribeHistoryStatesTimeWindow,
+  type HistoryResult,
+  convertStatisticsToHistory,
+  mergeHistoryResults,
 } from "../../../data/history";
 import { getSensorNumericDeviceClasses } from "../../../data/sensor";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 import { hasConfigOrEntitiesChanged } from "../common/has-changed";
 import { processConfigEntities } from "../common/process-config-entities";
-import { LovelaceCard } from "../types";
-import { HistoryGraphCardConfig } from "./types";
+import type { LovelaceCard, LovelaceGridOptions } from "../types";
+import type { HistoryGraphCardConfig } from "./types";
 import { createSearchParam } from "../../../common/url/search-params";
+import { fetchStatistics } from "../../../data/recorder";
 
 export const DEFAULT_HOURS_TO_SHOW = 24;
 
@@ -43,7 +39,9 @@ export class HuiHistoryGraphCard extends LitElement implements LovelaceCard {
 
   @property({ attribute: false }) public hass?: HomeAssistant;
 
-  @state() private _stateHistory?: HistoryResult;
+  @state() private _history?: HistoryResult;
+
+  @state() private _statisticsHistory?: HistoryResult;
 
   @state() private _config?: HistoryGraphCardConfig;
 
@@ -57,10 +55,20 @@ export class HuiHistoryGraphCard extends LitElement implements LovelaceCard {
 
   private _interval?: number;
 
-  private _subscribed?: Promise<(() => Promise<void>) | void>;
+  private _subscribed?: Promise<(() => Promise<void>) | undefined>;
+
+  private _stateHistory?: HistoryResult;
 
   public getCardSize(): number {
     return this._config?.title ? 2 : 0 + 2 * (this._entityIds?.length || 1);
+  }
+
+  getGridOptions(): LovelaceGridOptions {
+    return {
+      columns: 12,
+      min_columns: 6,
+      min_rows: 2,
+    };
   }
 
   public setConfig(config: HistoryGraphCardConfig): void {
@@ -125,19 +133,61 @@ export class HuiHistoryGraphCard extends LitElement implements LovelaceCard {
           sensorNumericDeviceClasses,
           this._config?.split_device_classes
         );
+
+        this._mergeHistory();
       },
       this._hoursToShow,
       this._entityIds
     ).catch((err) => {
       this._subscribed = undefined;
       this._error = err;
+      return undefined;
     });
+
+    await this._fetchStatistics(sensorNumericDeviceClasses);
+
     this._setRedrawTimer();
   }
 
-  private _redrawGraph() {
+  private _mergeHistory() {
     if (this._stateHistory) {
-      this._stateHistory = { ...this._stateHistory };
+      this._history = mergeHistoryResults(
+        this._stateHistory,
+        this._statisticsHistory,
+        this._config?.split_device_classes
+      );
+    }
+  }
+
+  private async _fetchStatistics(sensorNumericDeviceClasses: string[]) {
+    const now = new Date();
+    const start = new Date();
+    start.setHours(start.getHours() - this._hoursToShow);
+
+    const statistics = await fetchStatistics(
+      this.hass!,
+      start,
+      now,
+      this._entityIds,
+      "hour",
+      undefined,
+      ["mean", "state"]
+    );
+
+    this._statisticsHistory = convertStatisticsToHistory(
+      this.hass!,
+      statistics,
+      this._entityIds,
+      sensorNumericDeviceClasses,
+      this._config?.split_device_classes
+    );
+
+    this._mergeHistory();
+  }
+
+  private _redrawGraph() {
+    if (this._history) {
+      this._history = { ...this._history };
     }
   }
 
@@ -203,21 +253,25 @@ export class HuiHistoryGraphCard extends LitElement implements LovelaceCard {
       start_date: now.toISOString(),
     })}`;
 
+    const columns = this._config.grid_options?.columns ?? 12;
+    const narrow = typeof columns === "number" && columns <= 12;
+    const hasFixedHeight = typeof this._config.grid_options?.rows === "number";
+
     return html`
       <ha-card>
         ${this._config.title
           ? html`
               <h1 class="card-header">
                 ${this._config.title}
-                <a href=${configUrl}
-                  ><ha-icon-button .path=${mdiChevronRight}></ha-icon-button
-                ></a>
+                <a href=${configUrl}><ha-icon-next></ha-icon-next></a>
               </h1>
             `
           : nothing}
         <div
           class="content ${classMap({
             "has-header": !!this._config.title,
+            "has-rows": !!this._config.grid_options?.rows,
+            "has-height": hasFixedHeight,
           })}"
         >
           ${this._error
@@ -230,8 +284,8 @@ export class HuiHistoryGraphCard extends LitElement implements LovelaceCard {
             : html`
                 <state-history-charts
                   .hass=${this.hass}
-                  .isLoadingData=${!this._stateHistory}
-                  .historyData=${this._stateHistory}
+                  .isLoadingData=${!this._history}
+                  .historyData=${this._history}
                   .names=${this._names}
                   up-to-now
                   .hoursToShow=${this._hoursToShow}
@@ -242,6 +296,9 @@ export class HuiHistoryGraphCard extends LitElement implements LovelaceCard {
                   .minYAxis=${this._config.min_y_axis}
                   .maxYAxis=${this._config.max_y_axis}
                   .fitYData=${this._config.fit_y_data || false}
+                  .height=${hasFixedHeight ? "100%" : undefined}
+                  .narrow=${narrow}
+                  .expandLegend=${this._config.expand_legend}
                 ></state-history-charts>
               `}
         </div>
@@ -249,28 +306,40 @@ export class HuiHistoryGraphCard extends LitElement implements LovelaceCard {
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-card {
-        height: 100%;
-      }
-      .card-header {
-        justify-content: space-between;
-        display: flex;
-      }
-      .card-header ha-icon-button {
-        --mdc-icon-button-size: 24px;
-        line-height: 24px;
-        color: var(--primary-text-color);
-      }
-      .content {
-        padding: 16px;
-      }
-      .has-header {
-        padding-top: 0;
-      }
-    `;
-  }
+  static styles = css`
+    ha-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .card-header {
+      justify-content: space-between;
+      display: flex;
+      padding-bottom: 0;
+    }
+    .card-header ha-icon-next {
+      --mdc-icon-button-size: 24px;
+      line-height: 24px;
+      color: var(--primary-text-color);
+    }
+    .content {
+      padding: 0 16px 8px;
+      flex: 1;
+      overflow: hidden;
+    }
+    .has-header {
+      padding-top: 0;
+    }
+    state-history-charts {
+      --timeline-top-margin: 16px;
+    }
+    .has-height state-history-charts {
+      height: 100%;
+    }
+    .has-rows {
+      --chart-max-height: 100%;
+    }
+  `;
 }
 
 declare global {

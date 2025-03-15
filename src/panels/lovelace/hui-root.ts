@@ -17,14 +17,8 @@ import {
 } from "@mdi/js";
 import "@polymer/paper-tabs/paper-tab";
 import "@polymer/paper-tabs/paper-tabs";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-  css,
-  html,
-} from "lit";
+import type { CSSResultGroup, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { classMap } from "lit/directives/class-map";
 import { ifDefined } from "lit/directives/if-defined";
@@ -33,6 +27,7 @@ import { isComponentLoaded } from "../../common/config/is_component_loaded";
 import { fireEvent } from "../../common/dom/fire_event";
 import { shouldHandleRequestSelectedEvent } from "../../common/mwc/handle-request-selected-event";
 import { navigate } from "../../common/navigate";
+import type { LocalizeKeys } from "../../common/translations/localize";
 import { constructUrlCurrentPath } from "../../common/url/construct-url";
 import {
   addSearchParam,
@@ -51,34 +46,44 @@ import "../../components/ha-menu-button";
 import "../../components/ha-svg-icon";
 import "../../components/ha-tabs";
 import type { LovelacePanelConfig } from "../../data/lovelace";
+import type { LovelaceConfig } from "../../data/lovelace/config/types";
+import { isStrategyDashboard } from "../../data/lovelace/config/types";
+import type { LovelaceViewConfig } from "../../data/lovelace/config/view";
+import {
+  deleteDashboard,
+  fetchDashboards,
+  updateDashboard,
+} from "../../data/lovelace/dashboard";
+import { getPanelTitle } from "../../data/panel";
 import {
   showAlertDialog,
   showConfirmationDialog,
 } from "../../dialogs/generic/show-dialog-box";
-import { showQuickBar } from "../../dialogs/quick-bar/show-dialog-quick-bar";
+import {
+  QuickBarMode,
+  showQuickBar,
+} from "../../dialogs/quick-bar/show-dialog-quick-bar";
 import { showVoiceCommandDialog } from "../../dialogs/voice-command-dialog/show-ha-voice-command-dialog";
 import { haStyle } from "../../resources/styles";
-import type { HomeAssistant } from "../../types";
+import type { HomeAssistant, PanelInfo } from "../../types";
 import { documentationUrl } from "../../util/documentation-url";
+import { showDashboardDetailDialog } from "../config/lovelace/dashboards/show-dialog-lovelace-dashboard-detail";
 import { swapView } from "./editor/config-util";
-import { showEditLovelaceDialog } from "./editor/lovelace-editor/show-edit-lovelace-dialog";
-import { showEditViewDialog } from "./editor/view-editor/show-edit-view-dialog";
 import { showDashboardStrategyEditorDialog } from "./editor/dashboard-strategy-editor/dialogs/show-dialog-dashboard-strategy-editor";
+import { showSaveDialog } from "./editor/show-save-config-dialog";
+import { showEditViewDialog } from "./editor/view-editor/show-edit-view-dialog";
+import { getLovelaceStrategy } from "./strategies/get-strategy";
+import { isLegacyStrategyConfig } from "./strategies/legacy-strategy";
 import type { Lovelace } from "./types";
 import "./views/hui-view";
+import "./views/hui-view-container";
 import type { HUIView } from "./views/hui-view";
-import { LovelaceViewConfig } from "../../data/lovelace/config/view";
-import {
-  LovelaceConfig,
-  isStrategyDashboard,
-} from "../../data/lovelace/config/types";
-import { showSaveDialog } from "./editor/show-save-config-dialog";
-import { isLegacyStrategyConfig } from "./strategies/legacy-strategy";
-import { LocalizeKeys } from "../../common/translations/localize";
-import { getLovelaceStrategy } from "./strategies/get-strategy";
+import "./views/hui-view-background";
 
 @customElement("hui-root")
 class HUIRoot extends LitElement {
+  @property({ attribute: false }) public panel?: PanelInfo<LovelacePanelConfig>;
+
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public lovelace?: Lovelace;
@@ -92,7 +97,7 @@ class HUIRoot extends LitElement {
 
   @state() private _curView?: number | "hass-unused-entities";
 
-  private _viewCache?: { [viewId: string]: HUIView };
+  private _viewCache?: Record<string, HUIView>;
 
   private _debouncedConfigChanged: () => void;
 
@@ -279,6 +284,12 @@ class HUIRoot extends LitElement {
     const curViewConfig =
       typeof this._curView === "number" ? views[this._curView] : undefined;
 
+    const dashboardTitle = this.panel
+      ? getPanelTitle(this.hass, this.panel)
+      : undefined;
+
+    const background = curViewConfig?.background || this.config.background;
+
     return html`
       <div
         class=${classMap({
@@ -290,7 +301,7 @@ class HUIRoot extends LitElement {
             ${this._editMode
               ? html`
                   <div class="main-title">
-                    ${this.config.title ||
+                    ${dashboardTitle ||
                     this.hass!.localize("ui.panel.lovelace.editor.header")}
                     <ha-icon-button
                       slot="actionItems"
@@ -299,7 +310,7 @@ class HUIRoot extends LitElement {
                       )}
                       .path=${mdiPencil}
                       class="edit-icon"
-                      @click=${this._editLovelace}
+                      @click=${this._editDashboard}
                     ></ha-icon-button>
                   </div>
                   <div class="action-items">${this._renderActionItems()}</div>
@@ -360,9 +371,11 @@ class HUIRoot extends LitElement {
                             )}
                           </ha-tabs>
                         `
-                      : html`<div class="main-title">
-                          ${this.config.title}
-                        </div>`}
+                      : html`
+                          <div class="main-title">
+                            ${views[0]?.title ?? dashboardTitle}
+                          </div>
+                        `}
                   <div class="action-items">${this._renderActionItems()}</div>
                 `}
           </div>
@@ -455,7 +468,15 @@ class HUIRoot extends LitElement {
               `
             : ""}
         </div>
-        <div id="view" @ll-rebuild=${this._debouncedConfigChanged}></div>
+        <hui-view-container
+          .hass=${this.hass}
+          .theme=${curViewConfig?.theme}
+          id="view"
+          @ll-rebuild=${this._debouncedConfigChanged}
+        >
+          <hui-view-background .hass=${this.hass} .background=${background}>
+          </hui-view-background>
+        </hui-view-container>
       </div>
     `;
   }
@@ -494,6 +515,13 @@ class HUIRoot extends LitElement {
       this._clearParam("conversation");
       this._showVoiceCommandDialog();
     }
+    window.addEventListener("scroll", this._handleWindowScroll, {
+      passive: true,
+    });
+  }
+
+  public connectedCallback(): void {
+    super.connectedCallback();
     window.addEventListener("scroll", this._handleWindowScroll, {
       passive: true,
     });
@@ -639,8 +667,10 @@ class HUIRoot extends LitElement {
 
   private _showQuickBar(): void {
     showQuickBar(this, {
-      commandMode: false,
-      hint: this.hass.localize("ui.tips.key_e_hint"),
+      mode: QuickBarMode.Entity,
+      hint: this.hass.enableShortcuts
+        ? this.hass.localize("ui.tips.key_e_hint")
+        : undefined,
     });
   }
 
@@ -756,8 +786,41 @@ class HUIRoot extends LitElement {
     this.lovelace!.setEditMode(false);
   }
 
-  private _editLovelace() {
-    showEditLovelaceDialog(this, this.lovelace!);
+  private async _editDashboard() {
+    const urlPath = this.route?.prefix.slice(1);
+    await this.hass.loadFragmentTranslation("config");
+    const dashboards = await fetchDashboards(this.hass);
+    const dashboard = dashboards.find((d) => d.url_path === urlPath);
+
+    showDashboardDetailDialog(this, {
+      dashboard,
+      urlPath,
+      updateDashboard: async (values) => {
+        await updateDashboard(this.hass!, dashboard!.id, values);
+      },
+      removeDashboard: async () => {
+        const confirm = await showConfirmationDialog(this, {
+          title: this.hass!.localize(
+            "ui.panel.config.lovelace.dashboards.confirm_delete_title",
+            { dashboard_title: dashboard!.title }
+          ),
+          text: this.hass!.localize(
+            "ui.panel.config.lovelace.dashboards.confirm_delete_text"
+          ),
+          confirmText: this.hass!.localize("ui.common.delete"),
+          destructive: true,
+        });
+        if (!confirm) {
+          return false;
+        }
+        try {
+          await deleteDashboard(this.hass!, dashboard!.id);
+          return true;
+        } catch (_err: any) {
+          return false;
+        }
+      },
+    });
   }
 
   private _navigateToView(path: string | number, replace?: boolean) {
@@ -775,6 +838,10 @@ class HUIRoot extends LitElement {
     showEditViewDialog(this, {
       lovelace: this.lovelace!,
       viewIndex: this._curView as number,
+      saveCallback: (viewIndex: number, viewConfig: LovelaceViewConfig) => {
+        const path = viewConfig.path || viewIndex;
+        this._navigateToView(path);
+      },
     });
   }
 
@@ -881,14 +948,6 @@ class HUIRoot extends LitElement {
     view.hass = this.hass;
     view.narrow = this.narrow;
 
-    const configBackground = viewConfig.background || this.config.background;
-
-    if (configBackground) {
-      this.style.setProperty("--lovelace-background", configBackground);
-    } else {
-      this.style.removeProperty("--lovelace-background");
-    }
-
     root.appendChild(view);
   }
 
@@ -908,6 +967,8 @@ class HUIRoot extends LitElement {
           position: fixed;
           top: 0;
           width: var(--mdc-top-app-bar-width, 100%);
+          -webkit-backdrop-filter: var(--app-header-backdrop-filter, none);
+          backdrop-filter: var(--app-header-backdrop-filter, none);
           padding-top: env(safe-area-inset-top);
           z-index: 4;
           transition: box-shadow 200ms linear;
@@ -998,32 +1059,26 @@ class HUIRoot extends LitElement {
         mwc-button.warning:not([disabled]) {
           color: var(--error-color);
         }
-        #view {
+        hui-view-container {
           position: relative;
           display: flex;
-          padding-top: calc(var(--header-height) + env(safe-area-inset-top));
           min-height: 100vh;
           box-sizing: border-box;
+          padding-top: calc(var(--header-height) + env(safe-area-inset-top));
           padding-left: env(safe-area-inset-left);
           padding-right: env(safe-area-inset-right);
           padding-inline-start: env(safe-area-inset-left);
           padding-inline-end: env(safe-area-inset-right);
           padding-bottom: env(safe-area-inset-bottom);
         }
-        hui-view {
-          background: var(
-            --lovelace-background,
-            var(--primary-background-color)
-          );
-        }
-        #view > * {
+        hui-view-container > * {
           flex: 1 1 100%;
           max-width: 100%;
         }
         /**
          * In edit mode we have the tab bar on a new line *
          */
-        .edit-mode #view {
+        .edit-mode hui-view-container {
           padding-top: calc(
             var(--header-height) + 48px + env(safe-area-inset-top)
           );

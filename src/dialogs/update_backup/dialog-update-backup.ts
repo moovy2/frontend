@@ -1,10 +1,10 @@
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { fireEvent } from "../../common/dom/fire_event";
 import "../../components/ha-button";
 import { createCloseHeading } from "../../components/ha-dialog";
-import { HomeAssistant } from "../../types";
-import { UpdateBackupDialogParams } from "./show-update-backup-dialog";
+import type { HomeAssistant } from "../../types";
+import type { UpdateBackupDialogParams } from "./show-update-backup-dialog";
 
 @customElement("dialog-update-backup")
 class DialogBox extends LitElement {
@@ -66,23 +66,21 @@ class DialogBox extends LitElement {
     fireEvent(this, "dialog-closed", { dialog: this.localName });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      p {
-        margin: 0;
-        color: var(--primary-text-color);
-      }
+  static styles = css`
+    p {
+      margin: 0;
+      color: var(--primary-text-color);
+    }
+    ha-dialog {
+      /* Place above other dialogs */
+      --dialog-z-index: 104;
+    }
+    @media all and (min-width: 600px) {
       ha-dialog {
-        /* Place above other dialogs */
-        --dialog-z-index: 104;
+        --mdc-dialog-min-width: 400px;
       }
-      @media all and (min-width: 600px) {
-        ha-dialog {
-          --mdc-dialog-min-width: 400px;
-        }
-      }
-    `;
-  }
+    }
+  `;
 }
 
 declare global {

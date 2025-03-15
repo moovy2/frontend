@@ -1,4 +1,5 @@
-import { html, LitElement, PropertyValues, nothing } from "lit";
+import type { PropertyValues } from "lit";
+import { html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import "../../../../../components/data-table/ha-data-table";
@@ -6,10 +7,11 @@ import type {
   DataTableColumnContainer,
   DataTableRowData,
 } from "../../../../../components/data-table/ha-data-table";
-import "../../../../../components/ha-circular-progress";
+import "../../../../../components/ha-spinner";
 import "../../../../../components/ha-code-editor";
-import { fetchDevices, ZHADevice } from "../../../../../data/zha";
-import { HomeAssistant } from "../../../../../types";
+import type { ZHADevice } from "../../../../../data/zha";
+import { fetchDevices } from "../../../../../data/zha";
+import type { HomeAssistant } from "../../../../../types";
 
 export interface DeviceRowData extends DataTableRowData {
   id: string;
@@ -69,14 +71,13 @@ class ZHADeviceNeighbors extends LitElement {
               sortable: true,
               filterable: true,
               direction: "asc",
-              grows: true,
+              flex: 2,
             },
             lqi: {
               title: this.hass.localize("ui.panel.config.zha.neighbors.lqi"),
               sortable: true,
               filterable: true,
               type: "numeric",
-              width: "75px",
             },
           }
         : {
@@ -85,14 +86,13 @@ class ZHADeviceNeighbors extends LitElement {
               sortable: true,
               filterable: true,
               direction: "asc",
-              grows: true,
+              flex: 2,
             },
             lqi: {
               title: this.hass.localize("ui.panel.config.zha.neighbors.lqi"),
               sortable: true,
               filterable: true,
               type: "numeric",
-              width: "75px",
             },
             relationship: {
               title: this.hass.localize(
@@ -100,14 +100,12 @@ class ZHADeviceNeighbors extends LitElement {
               ),
               sortable: true,
               filterable: true,
-              width: "150px",
             },
             depth: {
               title: this.hass.localize("ui.panel.config.zha.neighbors.depth"),
               sortable: true,
               filterable: true,
               type: "numeric",
-              width: "75px",
             },
           }
   );
@@ -118,10 +116,7 @@ class ZHADeviceNeighbors extends LitElement {
     }
     return html`
       ${!this._devices
-        ? html`<ha-circular-progress
-            size="large"
-            indeterminate
-          ></ha-circular-progress>`
+        ? html`<ha-spinner size="large"></ha-spinner>`
         : html`<ha-data-table
             .hass=${this.hass}
             .columns=${this._columns(this.narrow)}

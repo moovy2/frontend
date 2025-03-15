@@ -1,5 +1,6 @@
-import { TodoItem, TodoItemStatus } from "../../../src/data/todo";
-import { MockHomeAssistant } from "../../../src/fake_data/provide_hass";
+import type { TodoItem } from "../../../src/data/todo";
+import { TodoItemStatus } from "../../../src/data/todo";
+import type { MockHomeAssistant } from "../../../src/fake_data/provide_hass";
 
 export const mockTodo = (hass: MockHomeAssistant) => {
   hass.mockWS("todo/item/list", () => ({
@@ -21,5 +22,6 @@ export const mockTodo = (hass: MockHomeAssistant) => {
       },
     ] as TodoItem[],
   }));
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   hass.mockWS("todo/item/subscribe", (_msg, _hass) => () => {});
 };

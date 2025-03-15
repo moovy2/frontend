@@ -3,6 +3,8 @@ const env = require("./env.cjs");
 const paths = require("./paths.cjs");
 const { dependencies } = require("../package.json");
 
+const BABEL_PLUGINS = path.join(__dirname, "babel-plugins");
+
 // GitHub base URL to use for production source maps
 // Nightly builds use the commit SHA, otherwise assumes there is a tag that matches the version
 module.exports.sourceMapURL = () => {
@@ -45,12 +47,17 @@ module.exports.emptyPackages = ({ latestBuild, isHassioBuild }) =>
 
 module.exports.definedVars = ({ isProdBuild, latestBuild, defineOverlay }) => ({
   __DEV__: !isProdBuild,
-  __BUILD__: JSON.stringify(latestBuild ? "latest" : "es5"),
+  __BUILD__: JSON.stringify(latestBuild ? "modern" : "legacy"),
   __VERSION__: JSON.stringify(env.version()),
   __DEMO__: false,
   __SUPERVISOR__: false,
   __BACKWARDS_COMPAT__: false,
   __STATIC_PATH__: "/static/",
+  __HASS_URL__: `\`${
+    "HASS_URL" in process.env
+      ? process.env.HASS_URL
+      : "${location.protocol}//${location.host}"
+  }\``,
   "process.env.NODE_ENV": JSON.stringify(
     isProdBuild ? "production" : "development"
   ),
@@ -77,7 +84,12 @@ module.exports.terserOptions = ({ latestBuild, isTestBuild }) => ({
   sourceMap: !isTestBuild,
 });
 
-module.exports.babelOptions = ({ latestBuild, isProdBuild, isTestBuild }) => ({
+module.exports.babelOptions = ({
+  latestBuild,
+  isProdBuild,
+  isTestBuild,
+  sw,
+}) => ({
   babelrc: false,
   compact: false,
   assumptions: {
@@ -85,13 +97,13 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild, isTestBuild }) => ({
     setPublicClassFields: true,
     setSpreadProperties: true,
   },
-  browserslistEnv: latestBuild ? "modern" : "legacy",
+  browserslistEnv: latestBuild ? "modern" : `legacy${sw ? "-sw" : ""}`,
   presets: [
     [
       "@babel/preset-env",
       {
-        useBuiltIns: latestBuild ? false : "usage",
-        corejs: latestBuild ? false : dependencies["core-js"],
+        useBuiltIns: "usage",
+        corejs: dependencies["core-js"],
         bugfixes: true,
         shippedProposals: true,
       },
@@ -100,21 +112,11 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild, isTestBuild }) => ({
   ],
   plugins: [
     [
-      path.resolve(
-        paths.polymer_dir,
-        "build-scripts/babel-plugins/inline-constants-plugin.cjs"
-      ),
+      path.join(BABEL_PLUGINS, "inline-constants-plugin.cjs"),
       {
         modules: ["@mdi/js"],
         ignoreModuleNotFound: true,
       },
-    ],
-    [
-      path.resolve(
-        paths.polymer_dir,
-        "build-scripts/babel-plugins/custom-polyfill-plugin.js"
-      ),
-      { method: "usage-global" },
     ],
     // Minify template literals for production
     isProdBuild && [
@@ -143,16 +145,42 @@ module.exports.babelOptions = ({ latestBuild, isProdBuild, isTestBuild }) => ({
       "@babel/plugin-transform-runtime",
       { version: dependencies["@babel/runtime"] },
     ],
-    // Support  some proposals still in TC39 process
-    ["@babel/plugin-proposal-decorators", { decoratorsBeforeExport: true }],
+    // Transpile decorators (still in TC39 process)
+    // Modern browsers support class fields and private methods, but transform is required with the older decorator version dictated by Lit
+    [
+      "@babel/plugin-proposal-decorators",
+      { version: "2018-09", decoratorsBeforeExport: true },
+    ],
+    "@babel/plugin-transform-class-properties",
+    "@babel/plugin-transform-private-methods",
   ].filter(Boolean),
   exclude: [
     // \\ for Windows, / for Mac OS and Linux
     /node_modules[\\/]core-js/,
-    /node_modules[\\/]webpack[\\/]buildin/,
   ],
   sourceMaps: !isTestBuild,
   overrides: [
+    {
+      // Add plugin to inject various polyfills, excluding the polyfills
+      // themselves to prevent self-injection.
+      plugins: [
+        [
+          path.join(BABEL_PLUGINS, "custom-polyfill-plugin.js"),
+          { method: "usage-global" },
+        ],
+      ],
+      exclude: [
+        path.join(paths.polymer_dir, "src/resources/polyfills"),
+        ...[
+          "@formatjs/(?:ecma402-abstract|intl-\\w+)",
+          "@lit-labs/virtualizer/polyfills",
+          "@webcomponents/scoped-custom-element-registry",
+          "element-internals-polyfill",
+          "proxy-polyfill",
+          "unfetch",
+        ].map((p) => new RegExp(`/node_modules/${p}/`)),
+      ],
+    },
     {
       // Use unambiguous for dependencies so that require() is correctly injected into CommonJS files
       // Exclusions are needed in some cases where ES modules have no static imports or exports, such as polyfills
@@ -202,7 +230,12 @@ module.exports.config = {
     return {
       name: "frontend" + nameSuffix(latestBuild),
       entry: {
-        service_worker: "./src/entrypoints/service_worker.ts",
+        "service-worker": !latestBuild
+          ? {
+              import: "./src/entrypoints/service-worker.ts",
+              layer: "sw",
+            }
+          : "./src/entrypoints/service-worker.ts",
         app: "./src/entrypoints/app.ts",
         authorize: "./src/entrypoints/authorize.ts",
         onboarding: "./src/entrypoints/onboarding.ts",
@@ -296,6 +329,19 @@ module.exports.config = {
       defineOverlay: {
         __DEMO__: true,
       },
+    };
+  },
+
+  landingPage({ isProdBuild, latestBuild }) {
+    return {
+      name: "landing-page" + nameSuffix(latestBuild),
+      entry: {
+        entrypoint: path.resolve(paths.landingPage_dir, "src/entrypoint.js"),
+      },
+      outputPath: outputPath(paths.landingPage_output_root, latestBuild),
+      publicPath: publicPath(latestBuild),
+      isProdBuild,
+      latestBuild,
     };
   },
 };

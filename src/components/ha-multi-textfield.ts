@@ -1,5 +1,6 @@
 import { mdiDeleteOutline, mdiPlus } from "@mdi/js";
-import { CSSResultGroup, LitElement, css, html } from "lit";
+import type { CSSResultGroup } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "../common/dom/fire_event";
 import { haStyle } from "../resources/styles";
@@ -7,6 +8,7 @@ import type { HomeAssistant } from "../types";
 import "./ha-button";
 import "./ha-icon-button";
 import "./ha-textfield";
+import "./ha-input-helper-text";
 import type { HaTextField } from "./ha-textfield";
 
 @customElement("ha-multi-textfield")
@@ -19,17 +21,19 @@ class HaMultiTextField extends LitElement {
 
   @property() public label?: string;
 
-  @property() public inputType?: string;
+  @property({ attribute: false }) public helper?: string;
 
-  @property() public inputSuffix?: string;
+  @property({ attribute: false }) public inputType?: string;
 
-  @property() public inputPrefix?: string;
+  @property({ attribute: false }) public inputSuffix?: string;
 
-  @property() public autocomplete?: string;
+  @property({ attribute: false }) public inputPrefix?: string;
 
-  @property() public addLabel?: string;
+  @property({ attribute: false }) public autocomplete?: string;
 
-  @property() public removeLabel?: string;
+  @property({ attribute: false }) public addLabel?: string;
+
+  @property({ attribute: false }) public removeLabel?: string;
 
   @property({ attribute: "item-index", type: Boolean })
   public itemIndex = false;
@@ -68,12 +72,21 @@ class HaMultiTextField extends LitElement {
           </div>
         `;
       })}
-      <div class="layout horizontal center-center">
+      <div class="layout horizontal">
         <ha-button @click=${this._addItem} .disabled=${this.disabled}>
-          ${this.addLabel ?? this.hass?.localize("ui.common.add") ?? "Add"}
+          ${this.addLabel ??
+          (this.label
+            ? this.hass?.localize("ui.components.multi-textfield.add_item", {
+                item: this.label,
+              })
+            : this.hass?.localize("ui.common.add")) ??
+          "Add"}
           <ha-svg-icon slot="icon" .path=${mdiPlus}></ha-svg-icon>
         </ha-button>
       </div>
+      ${this.helper
+        ? html`<ha-input-helper-text>${this.helper}</ha-input-helper-text>`
+        : nothing}
     `;
   }
 

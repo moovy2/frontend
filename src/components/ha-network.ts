@@ -1,23 +1,16 @@
 import { mdiStar } from "@mdi/js";
-import "@lrnwebcomponents/simple-tooltip/simple-tooltip";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  nothing,
-  TemplateResult,
-} from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { fireEvent } from "../common/dom/fire_event";
-import {
+import type {
   Adapter,
   IPv4ConfiguredAddress,
   IPv6ConfiguredAddress,
   NetworkConfig,
 } from "../data/network";
 import { haStyle } from "../resources/styles";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 import "./ha-checkbox";
 import type { HaCheckbox } from "./ha-checkbox";
 import "./ha-settings-row";
@@ -33,7 +26,7 @@ const format_addresses = (
 
 const format_auto_detected_interfaces = (
   adapters: Adapter[]
-): Array<TemplateResult | string> =>
+): (TemplateResult | string)[] =>
   adapters.map((adapter) =>
     adapter.auto
       ? html`${adapter.name}
@@ -70,9 +63,13 @@ export class HaNetwork extends LitElement {
           >
           </ha-checkbox>
         </span>
-        <span slot="heading" data-for="auto_configure"> Auto Configure </span>
+        <span slot="heading" data-for="auto_configure">
+          ${this.hass.localize(
+            "ui.panel.config.network.adapter.auto_configure"
+          )}
+        </span>
         <span slot="description" data-for="auto_configure">
-          Detected:
+          ${this.hass.localize("ui.panel.config.network.adapter.detected")}:
           ${format_auto_detected_interfaces(this.networkConfig.adapters)}
         </span>
       </ha-settings-row>
@@ -91,18 +88,21 @@ export class HaNetwork extends LitElement {
                   </ha-checkbox>
                 </span>
                 <span slot="heading">
-                  Adapter: ${adapter.name}
+                  ${this.hass.localize(
+                    "ui.panel.config.network.adapter.adapter"
+                  )}:
+                  ${adapter.name}
                   ${adapter.default
                     ? html`<ha-svg-icon .path=${mdiStar}></ha-svg-icon>
-                        (Default)`
-                    : ""}
+                        (${this.hass.localize("ui.common.default")})`
+                    : nothing}
                 </span>
                 <span slot="description">
                   ${format_addresses([...adapter.ipv4, ...adapter.ipv6])}
                 </span>
               </ha-settings-row>`
           )
-        : ""}
+        : nothing}
     `;
   }
 

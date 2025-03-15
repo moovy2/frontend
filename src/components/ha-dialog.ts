@@ -1,7 +1,8 @@
 import { DialogBase } from "@material/mwc-dialog/mwc-dialog-base";
 import { styles } from "@material/mwc-dialog/mwc-dialog.css";
 import { mdiClose } from "@mdi/js";
-import { css, html, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { css, html } from "lit";
 import { customElement } from "lit/decorators";
 import { FOCUS_TARGET } from "../dialogs/make-dialog-manager";
 import type { HomeAssistant } from "../types";
@@ -14,13 +15,13 @@ export const createCloseHeading = (
   title: string | TemplateResult
 ) => html`
   <div class="header_title">
-    <span>${title}</span>
     <ha-icon-button
-      .label=${hass?.localize("ui.dialogs.generic.close") ?? "Close"}
+      .label=${hass?.localize("ui.common.close") ?? "Close"}
       .path=${mdiClose}
       dialogAction="close"
       class="header_button"
     ></ha-icon-button>
+    <span>${title}</span>
   </div>
 `;
 
@@ -75,8 +76,14 @@ export class HaDialog extends DialogBase {
           var(--divider-color)
         );
         z-index: var(--dialog-z-index, 8);
-        -webkit-backdrop-filter: var(--dialog-backdrop-filter, none);
-        backdrop-filter: var(--dialog-backdrop-filter, none);
+        -webkit-backdrop-filter: var(
+          --ha-dialog-scrim-backdrop-filter,
+          var(--dialog-backdrop-filter, none)
+        );
+        backdrop-filter: var(
+          --ha-dialog-scrim-backdrop-filter,
+          var(--dialog-backdrop-filter, none)
+        );
         --mdc-dialog-box-shadow: var(--dialog-box-shadow, none);
         --mdc-typography-headline6-font-weight: 400;
         --mdc-typography-headline6-font-size: 1.574rem;
@@ -96,6 +103,9 @@ export class HaDialog extends DialogBase {
       }
       .mdc-dialog__title {
         padding: 24px 24px 0 24px;
+      }
+      .mdc-dialog__title:has(span) {
+        padding: 12px 12px 0;
       }
       .mdc-dialog__actions {
         padding: 12px 24px 12px 24px;
@@ -119,16 +129,20 @@ export class HaDialog extends DialogBase {
         margin-top: var(--dialog-surface-margin-top);
         min-height: var(--mdc-dialog-min-height, auto);
         border-radius: var(--ha-dialog-border-radius, 28px);
+        -webkit-backdrop-filter: var(--ha-dialog-surface-backdrop-filter, none);
+        backdrop-filter: var(--ha-dialog-surface-backdrop-filter, none);
+        background: var(
+          --ha-dialog-surface-background,
+          var(--mdc-theme-surface, #fff)
+        );
       }
       :host([flexContent]) .mdc-dialog .mdc-dialog__content {
         display: flex;
         flex-direction: column;
       }
       .header_title {
-        position: relative;
-        padding-right: 40px;
-        padding-inline-end: 40px;
-        padding-inline-start: initial;
+        display: flex;
+        align-items: center;
         direction: var(--direction);
       }
       .header_title span {
@@ -136,15 +150,13 @@ export class HaDialog extends DialogBase {
         text-overflow: ellipsis;
         white-space: nowrap;
         display: block;
+        padding-left: 4px;
       }
       .header_button {
-        position: absolute;
-        right: -8px;
-        top: -8px;
         text-decoration: none;
         color: inherit;
         inset-inline-start: initial;
-        inset-inline-end: -8px;
+        inset-inline-end: -12px;
         direction: var(--direction);
       }
       .dialog-actions {

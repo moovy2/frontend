@@ -1,7 +1,7 @@
-import { HassConfig } from "home-assistant-js-websocket";
+import type { HassConfig } from "home-assistant-js-websocket";
 import memoizeOne from "memoize-one";
-import { DateFormat, FrontendLocaleData } from "../../data/translation";
-import "../../resources/intl-polyfill";
+import type { FrontendLocaleData } from "../../data/translation";
+import { DateFormat } from "../../data/translation";
 import { resolveTimeZone } from "./resolve-time-zone";
 
 // Tuesday, August 10

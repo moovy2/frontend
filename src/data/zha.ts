@@ -1,6 +1,6 @@
-import { HassEntity } from "home-assistant-js-websocket";
+import type { HassEntity } from "home-assistant-js-websocket";
 import type { HaFormSchema } from "../components/ha-form/types";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 
 export interface ZHAEntityReference extends HassEntity {
   name: string;
@@ -11,8 +11,8 @@ export interface ZHADevice {
   available: boolean;
   name: string;
   ieee: string;
-  nwk: string;
-  lqi: string;
+  nwk: number;
+  lqi: number;
   rssi: string;
   last_seen: string;
   manufacturer: string;
@@ -29,6 +29,7 @@ export interface ZHADevice {
   active_coordinator: boolean;
   signature: any;
   neighbors: Neighbor[];
+  routes: Route[];
   pairing_status?: string;
 }
 
@@ -38,6 +39,23 @@ export interface Neighbor {
   lqi: string;
   depth: string;
   relationship: string;
+}
+
+export interface Route {
+  dest_nwk: string;
+  route_status: RouteStatus;
+  memory_constrained: boolean;
+  many_to_one: boolean;
+  route_record_required: boolean;
+  next_hop: string;
+}
+
+export enum RouteStatus {
+  Active = "Active",
+  DiscoveryUnderway = "Discovery_Underway",
+  DiscoveryFailed = "Discovery_Failed",
+  Inactive = "Inactive",
+  ValidationUnderway = "Validation_Underway",
 }
 
 export interface ZHADeviceEndpoint {

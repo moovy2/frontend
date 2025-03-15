@@ -4,37 +4,41 @@ import "@material/mwc-list/mwc-list-item";
 import "@material/mwc-tab";
 import "@material/mwc-tab-bar";
 import { mdiClose } from "@mdi/js";
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { cache } from "lit/directives/cache";
 import { fireEvent } from "../../../../src/common/dom/fire_event";
 import "../../../../src/components/ha-alert";
-import "../../../../src/components/ha-circular-progress";
+import "../../../../src/components/ha-spinner";
 import "../../../../src/components/ha-dialog";
 import "../../../../src/components/ha-expansion-panel";
 import "../../../../src/components/ha-formfield";
-import "../../../../src/components/ha-textfield";
 import "../../../../src/components/ha-header-bar";
 import "../../../../src/components/ha-icon-button";
+import "../../../../src/components/ha-password-field";
 import "../../../../src/components/ha-radio";
+import "../../../../src/components/ha-textfield";
+import type { HaTextField } from "../../../../src/components/ha-textfield";
 import { extractApiErrorMessage } from "../../../../src/data/hassio/common";
-import {
+import type {
   AccessPoints,
-  accesspointScan,
   NetworkInterface,
-  updateNetworkInterface,
   WifiConfiguration,
 } from "../../../../src/data/hassio/network";
-import { Supervisor } from "../../../../src/data/supervisor/supervisor";
+import {
+  accesspointScan,
+  updateNetworkInterface,
+} from "../../../../src/data/hassio/network";
+import type { Supervisor } from "../../../../src/data/supervisor/supervisor";
 import {
   showAlertDialog,
   showConfirmationDialog,
 } from "../../../../src/dialogs/generic/show-dialog-box";
-import { HassDialog } from "../../../../src/dialogs/make-dialog-manager";
+import type { HassDialog } from "../../../../src/dialogs/make-dialog-manager";
 import { haStyleDialog } from "../../../../src/resources/styles";
 import type { HomeAssistant } from "../../../../src/types";
-import { HassioNetworkDialogParams } from "./show-dialog-network";
-import type { HaTextField } from "../../../../src/components/ha-textfield";
+import type { HassioNetworkDialogParams } from "./show-dialog-network";
 
 const IP_VERSIONS = ["ipv4", "ipv6"];
 
@@ -78,10 +82,11 @@ export class DialogHassioNetwork
     await this.updateComplete;
   }
 
-  public closeDialog(): void {
+  public closeDialog() {
     this._params = undefined;
     this._processing = false;
     fireEvent(this, "dialog-closed", { dialog: this.localName });
+    return true;
   }
 
   protected render() {
@@ -156,12 +161,8 @@ export class DialogHassioNetwork
                   .disabled=${this._scanning}
                 >
                   ${this._scanning
-                    ? html`<ha-circular-progress
-                        aria-label="Scanning"
-                        indeterminate
-                        size="small"
-                      >
-                      </ha-circular-progress>`
+                    ? html`<ha-spinner aria-label="Scanning" size="small">
+                      </ha-spinner>`
                     : this.supervisor.localize("dialog.network.scan_ap")}
                 </mwc-button>
                 ${this._accessPoints &&
@@ -246,9 +247,8 @@ export class DialogHassioNetwork
                       ${this._wifiConfiguration.auth === "wpa-psk" ||
                       this._wifiConfiguration.auth === "wep"
                         ? html`
-                            <ha-textfield
+                            <ha-password-field
                               class="flex-auto"
-                              type="password"
                               id="psk"
                               .label=${this.supervisor.localize(
                                 "dialog.network.wifi_password"
@@ -256,7 +256,7 @@ export class DialogHassioNetwork
                               version="wifi"
                               @change=${this._handleInputValueChangedWifi}
                             >
-                            </ha-textfield>
+                            </ha-password-field>
                           `
                         : ""}
                     `
@@ -278,8 +278,7 @@ export class DialogHassioNetwork
         </mwc-button>
         <mwc-button @click=${this._updateNetwork} .disabled=${!this._dirty}>
           ${this._processing
-            ? html`<ha-circular-progress indeterminate size="small">
-              </ha-circular-progress>`
+            ? html`<ha-spinner size="small"> </ha-spinner>`
             : this.supervisor.localize("common.save")}
         </mwc-button>
       </div>`;
@@ -391,7 +390,7 @@ export class DialogHassioNetwork
     `;
   }
 
-  _toArray(data: string | string[]): string[] {
+  private _toArray(data: string | string[]): string[] {
     if (Array.isArray(data)) {
       if (data && typeof data[0] === "string") {
         data = data[0];
@@ -406,7 +405,7 @@ export class DialogHassioNetwork
     return data;
   }
 
-  _toString(data: string | string[]): string {
+  private _toString(data: string | string[]): string {
     if (!data) {
       return "";
     }

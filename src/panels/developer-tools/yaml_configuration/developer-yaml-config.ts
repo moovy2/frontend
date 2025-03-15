@@ -1,20 +1,16 @@
 import "@material/mwc-button";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  nothing,
-  TemplateResult,
-} from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { componentsWithService } from "../../../common/config/components_with_service";
 import "../../../components/buttons/ha-call-service-button";
 import "../../../components/ha-alert";
 import "../../../components/ha-card";
-import "../../../components/ha-circular-progress";
-import { CheckConfigResult, checkCoreConfig } from "../../../data/core";
+import "../../../components/ha-spinner";
+import type { CheckConfigResult } from "../../../data/core";
+import { checkCoreConfig } from "../../../data/core";
 import { domainToName } from "../../../data/integration";
+import { stringCompare } from "../../../common/string/compare";
 import { showRestartDialog } from "../../../dialogs/restart/show-dialog-restart";
 import { haStyle } from "../../../resources/styles";
 import type { HomeAssistant, Route, TranslationDict } from "../../../types";
@@ -24,21 +20,26 @@ type ReloadableDomain = Exclude<
   "heading" | "introduction" | "reload"
 >;
 
+interface TranslatedReloadableDomain {
+  domain: ReloadableDomain;
+  name: string;
+}
+
 @customElement("developer-yaml-config")
 export class DeveloperYamlConfig extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property({ type: Boolean }) public isWide = false;
+  @property({ attribute: "is-wide", type: Boolean }) public isWide = false;
 
   @property({ type: Boolean }) public narrow = false;
 
   @property({ attribute: false }) public route!: Route;
 
-  @property({ type: Boolean }) public showAdvanced = false;
+  @property({ attribute: false }) public showAdvanced = false;
 
   @state() private _validating = false;
 
-  @state() private _reloadableDomains: ReloadableDomain[] = [];
+  @state() private _reloadableDomains: TranslatedReloadableDomain[] = [];
 
   @state() private _validateResult?: CheckConfigResult;
 
@@ -51,12 +52,27 @@ export class DeveloperYamlConfig extends LitElement {
     const oldHass = changedProperties.get("hass");
     if (
       changedProperties.has("hass") &&
-      (!oldHass || oldHass.config.components !== this.hass.config.components)
+      (!oldHass ||
+        oldHass.config.components !== this.hass.config.components ||
+        oldHass.localize !== this.hass.localize)
     ) {
-      this._reloadableDomains = componentsWithService(
-        this.hass,
-        "reload"
-      ).sort() as ReloadableDomain[];
+      this._reloadableDomains = (
+        componentsWithService(this.hass, "reload") as ReloadableDomain[]
+      )
+        .map((domain) => ({
+          domain,
+          name:
+            this.hass.localize(
+              `ui.panel.developer-tools.tabs.yaml.section.reloading.${domain}`
+            ) ||
+            this.hass.localize(
+              "ui.panel.developer-tools.tabs.yaml.section.reloading.reload",
+              { domain: domainToName(this.hass.localize, domain) }
+            ),
+        }))
+        .sort((a, b) =>
+          stringCompare(a.name, b.name, this.hass.locale.language)
+        );
     }
   }
 
@@ -78,7 +94,7 @@ export class DeveloperYamlConfig extends LitElement {
                 ? html`<div
                     class="validate-container layout vertical center-center"
                   >
-                    <ha-circular-progress indeterminate></ha-circular-progress>
+                    <ha-spinner></ha-spinner>
                   </div> `
                 : nothing
               : html`
@@ -176,19 +192,13 @@ export class DeveloperYamlConfig extends LitElement {
             </ha-call-service-button>
           </div>
           ${this._reloadableDomains.map(
-            (domain) => html`
+            (reloadable) => html`
               <div class="card-actions">
                 <ha-call-service-button
                   .hass=${this.hass}
-                  .domain=${domain}
+                  .domain=${reloadable.domain}
                   service="reload"
-                  >${this.hass.localize(
-                    `ui.panel.developer-tools.tabs.yaml.section.reloading.${domain}`
-                  ) ||
-                  this.hass.localize(
-                    "ui.panel.developer-tools.tabs.yaml.section.reloading.reload",
-                    { domain: domainToName(this.hass.localize, domain) }
-                  )}
+                  >${reloadable.name}
                 </ha-call-service-button>
               </div>
             `

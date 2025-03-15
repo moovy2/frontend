@@ -3,16 +3,19 @@ import "@material/mwc-tab/mwc-tab";
 import type { MDCTabBarActivatedEvent } from "@material/tab-bar";
 import { mdiCodeBraces, mdiContentCopy, mdiListBoxOutline } from "@mdi/js";
 import deepClone from "deep-clone-simple";
-import { CSSResultGroup, LitElement, css, html, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
 import { any, array, assert, assign, object, optional } from "superstruct";
 import { storage } from "../../../../common/decorators/storage";
-import { HASSDomEvent, fireEvent } from "../../../../common/dom/fire_event";
+import type { HASSDomEvent } from "../../../../common/dom/fire_event";
+import { fireEvent } from "../../../../common/dom/fire_event";
+import "../../../../components/ha-alert";
 import "../../../../components/ha-button";
 import "../../../../components/ha-list-item";
 import "../../../../components/ha-svg-icon";
-import { LovelaceCardConfig } from "../../../../data/lovelace/config/card";
-import { LovelaceConfig } from "../../../../data/lovelace/config/types";
+import type { LovelaceCardConfig } from "../../../../data/lovelace/config/card";
+import type { LovelaceConfig } from "../../../../data/lovelace/config/types";
 import type { HomeAssistant } from "../../../../types";
 import type { ConditionalCardConfig } from "../../cards/types";
 import type { LovelaceCardEditor } from "../../types";
@@ -44,7 +47,7 @@ export class HuiConditionalCardEditor
   @property({ attribute: false }) public lovelace?: LovelaceConfig;
 
   @storage({
-    key: "lovelaceClipboard",
+    key: "dashboardCardClipboard",
     state: false,
     subscribe: false,
     storage: "sessionStorage",
@@ -142,6 +145,11 @@ export class HuiConditionalCardEditor
             </div>
           `
         : html`
+            <ha-alert alert-type="info">
+              ${this.hass!.localize(
+                "ui.panel.lovelace.editor.condition-editor.explanation"
+              )}
+            </ha-alert>
             <ha-card-conditions-editor
               .hass=${this.hass}
               .conditions=${this._config.conditions}
@@ -230,6 +238,10 @@ export class HuiConditionalCardEditor
       css`
         mwc-tab-bar {
           border-bottom: 1px solid var(--divider-color);
+        }
+        ha-alert {
+          display: block;
+          margin-top: 12px;
         }
         .card {
           margin-top: 8px;

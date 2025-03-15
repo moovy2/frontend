@@ -1,32 +1,31 @@
 import { mdiPlay, mdiStop } from "@mdi/js";
 import "@material/mwc-button";
-import { HassEntity } from "home-assistant-js-websocket";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  nothing,
-  PropertyValues,
-} from "lit";
+import type { HassEntity } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import "../../../components/ha-relative-time";
 import "../../../components/ha-service-control";
 import "../../../components/ha-control-button";
 import "../../../components/ha-control-button-group";
 import "../../../components/entity/state-info";
-import { HomeAssistant } from "../../../types";
-import { canRun, ScriptEntity } from "../../../data/script";
+import type { HomeAssistant } from "../../../types";
+import type { ScriptEntity } from "../../../data/script";
+import { canRun } from "../../../data/script";
 import { isUnavailableState } from "../../../data/entity";
 import { computeObjectId } from "../../../common/entity/compute_object_id";
 import { listenMediaQuery } from "../../../common/dom/media_query";
 import "../components/ha-more-info-state-header";
+import type { ExtEntityRegistryEntry } from "../../../data/entity_registry";
+import "../../../components/ha-markdown";
 
 @customElement("more-info-script")
 class MoreInfoScript extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
   @property({ attribute: false }) public stateObj?: ScriptEntity;
+
+  @property({ attribute: false }) public entry?: ExtEntityRegistryEntry;
 
   @state() private _scriptData: Record<string, any> = {};
 
@@ -58,9 +57,11 @@ class MoreInfoScript extends LitElement {
     }
     const stateObj = this.stateObj;
 
-    const fields =
-      this.hass.services.script[computeObjectId(this.stateObj.entity_id)]
-        ?.fields;
+    const script =
+      this.hass.services.script[
+        this.entry?.unique_id || computeObjectId(this.stateObj.entity_id)
+      ];
+    const fields = script?.fields;
 
     const hasFields = fields && Object.keys(fields).length > 0;
 
@@ -83,6 +84,13 @@ class MoreInfoScript extends LitElement {
         .changedOverride=${this.stateObj.attributes.last_triggered || 0}
       ></ha-more-info-state-header>
 
+      ${script?.description
+        ? html`<ha-markdown
+            breaks
+            .content=${script.description}
+          ></ha-markdown>`
+        : nothing}
+
       <div class=${`queue ${hasQueue ? "has-queue" : ""}`}>
         ${hasQueue
           ? html`
@@ -100,8 +108,8 @@ class MoreInfoScript extends LitElement {
                 ${this.hass.localize("ui.card.script.run_script")}
               </div>
               <ha-service-control
-                hidePicker
-                hideDescription
+                hide-picker
+                hide-description
                 .hass=${this.hass}
                 .value=${this._scriptData}
                 .showAdvanced=${this.hass.userData?.showAdvanced}
@@ -138,17 +146,30 @@ class MoreInfoScript extends LitElement {
   protected override willUpdate(changedProperties: PropertyValues): void {
     super.willUpdate(changedProperties);
 
-    if (!changedProperties.has("stateObj")) {
-      return;
+    if (changedProperties.has("stateObj")) {
+      const oldState = changedProperties.get("stateObj") as
+        | HassEntity
+        | undefined;
+      const newState = this.stateObj;
+
+      if (
+        newState &&
+        (!oldState || oldState.entity_id !== newState.entity_id)
+      ) {
+        this._scriptData = {
+          action:
+            this.entry?.entity_id === newState.entity_id
+              ? `script.${this.entry.unique_id}`
+              : newState.entity_id,
+        };
+      }
     }
 
-    const oldState = changedProperties.get("stateObj") as
-      | HassEntity
-      | undefined;
-    const newState = this.stateObj;
-
-    if (newState && (!oldState || oldState.entity_id !== newState.entity_id)) {
-      this._scriptData = { service: newState.entity_id, data: {} };
+    if (this.entry?.unique_id && changedProperties.has("entry")) {
+      const action = `script.${this.entry?.unique_id}`;
+      if (this._scriptData?.action !== action) {
+        this._scriptData = { ...this._scriptData, action };
+      }
     }
   }
 
@@ -161,7 +182,7 @@ class MoreInfoScript extends LitElement {
     ev.stopPropagation();
     this.hass.callService(
       "script",
-      computeObjectId(this.stateObj!.entity_id),
+      this.entry?.unique_id || computeObjectId(this.stateObj!.entity_id),
       this._scriptData.data
     );
   }
@@ -187,37 +208,39 @@ class MoreInfoScript extends LitElement {
     return false;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      .queue {
-        visibility: hidden;
-        color: var(--secondary-text-color);
-        text-align: center;
-        margin-bottom: 16px;
-        height: 21px;
-      }
-      .queue.has-queue {
-        visibility: visible;
-      }
-      .fields {
-        padding: 16px;
-        border: 1px solid var(--divider-color);
-        border-radius: 8px;
-        margin-bottom: 16px;
-      }
-      .fields .title {
-        font-weight: bold;
-      }
-      ha-control-button ha-svg-icon {
-        z-index: -1;
-        margin-right: 4px;
-      }
-      ha-service-control {
-        --service-control-padding: 0;
-        --service-control-items-border-top: none;
-      }
-    `;
-  }
+  static styles = css`
+    .queue {
+      visibility: hidden;
+      color: var(--secondary-text-color);
+      text-align: center;
+      margin-bottom: 16px;
+      height: 21px;
+    }
+    .queue.has-queue {
+      visibility: visible;
+    }
+    .fields {
+      padding: 16px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .fields .title {
+      font-weight: bold;
+    }
+    ha-control-button ha-svg-icon {
+      z-index: -1;
+      margin-right: 4px;
+    }
+    ha-service-control {
+      --service-control-padding: 0;
+      --service-control-items-border-top: none;
+    }
+    ha-markdown {
+      text-align: center;
+      padding: 0 16px;
+    }
+  `;
 }
 
 declare global {

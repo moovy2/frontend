@@ -1,4 +1,4 @@
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 
 export interface ApplicationCredentialsDomainConfig {
   description_placeholders: Record<string, string>;
@@ -58,7 +58,7 @@ export const deleteApplicationCredential = async (
   hass: HomeAssistant,
   applicationCredentialsId: string
 ) =>
-  hass.callWS<void>({
+  hass.callWS<undefined>({
     type: "application_credentials/delete",
     application_credentials_id: applicationCredentialsId,
   });

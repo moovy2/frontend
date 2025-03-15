@@ -1,15 +1,17 @@
-import { HassEntity } from "home-assistant-js-websocket";
-import { html, LitElement, PropertyValues, nothing } from "lit";
+import type { HassEntity } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ensureArray } from "../../common/array/ensure-array";
 import { fireEvent } from "../../common/dom/fire_event";
-import {
-  EntitySources,
-  fetchEntitySourcesWithCache,
-} from "../../data/entity_sources";
+import type { EntitySources } from "../../data/entity_sources";
+import { fetchEntitySourcesWithCache } from "../../data/entity_sources";
 import type { EntitySelector } from "../../data/selector";
-import { filterSelectorEntities } from "../../data/selector";
-import { HomeAssistant } from "../../types";
+import {
+  filterSelectorEntities,
+  computeCreateDomains,
+} from "../../data/selector";
+import type { HomeAssistant } from "../../types";
 import "../entity/ha-entities-picker";
 import "../entity/ha-entity-picker";
 
@@ -30,6 +32,8 @@ export class HaEntitySelector extends LitElement {
   @property({ type: Boolean }) public disabled = false;
 
   @property({ type: Boolean }) public required = true;
+
+  @state() private _createDomains: string[] | undefined;
 
   private _hasIntegration(selector: EntitySelector) {
     return (
@@ -64,6 +68,7 @@ export class HaEntitySelector extends LitElement {
         .includeEntities=${this.selector.entity?.include_entities}
         .excludeEntities=${this.selector.entity?.exclude_entities}
         .entityFilter=${this._filterEntities}
+        .createDomains=${this._createDomains}
         .disabled=${this.disabled}
         .required=${this.required}
         allow-custom-entity
@@ -79,6 +84,7 @@ export class HaEntitySelector extends LitElement {
         .includeEntities=${this.selector.entity.include_entities}
         .excludeEntities=${this.selector.entity.exclude_entities}
         .entityFilter=${this._filterEntities}
+        .createDomains=${this._createDomains}
         .disabled=${this.disabled}
         .required=${this.required}
       ></ha-entities-picker>
@@ -95,6 +101,9 @@ export class HaEntitySelector extends LitElement {
       fetchEntitySourcesWithCache(this.hass).then((sources) => {
         this._entitySources = sources;
       });
+    }
+    if (changedProps.has("selector")) {
+      this._createDomains = computeCreateDomains(this.selector);
     }
   }
 

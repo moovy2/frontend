@@ -1,10 +1,10 @@
 import { mdiEye, mdiEyeOff } from "@mdi/js";
-import { CSSResultGroup, LitElement, css, html } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ensureArray } from "../../common/array/ensure-array";
 import { fireEvent } from "../../common/dom/fire_event";
-import { StringSelector } from "../../data/selector";
-import { HomeAssistant } from "../../types";
+import type { StringSelector } from "../../data/selector";
+import type { HomeAssistant } from "../../types";
 import "../ha-icon-button";
 import "../ha-multi-textfield";
 import "../ha-textarea";
@@ -50,6 +50,7 @@ export class HaTextSelector extends LitElement {
           .inputType=${this.selector.text?.type}
           .inputSuffix=${this.selector.text?.suffix}
           .inputPrefix=${this.selector.text?.prefix}
+          .helper=${this.helper}
           .autocomplete=${this.selector.text?.autocomplete}
           @value-changed=${this._handleChange}
         >
@@ -82,6 +83,7 @@ export class HaTextSelector extends LitElement {
         .disabled=${this.disabled}
         .type=${this._unmaskedPassword ? "text" : this.selector.text?.type}
         @input=${this._handleChange}
+        @change=${this._handleChange}
         .label=${this.label || ""}
         .prefix=${this.selector.text?.prefix}
         .suffix=${this.selector.text?.type === "password"
@@ -93,7 +95,6 @@ export class HaTextSelector extends LitElement {
       ></ha-textfield>
       ${this.selector.text?.type === "password"
         ? html`<ha-icon-button
-            toggles
             .label=${this.hass?.localize(
               this._unmaskedPassword
                 ? "ui.components.selectors.text.hide_password"
@@ -124,29 +125,27 @@ export class HaTextSelector extends LitElement {
     fireEvent(this, "value-changed", { value });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: block;
-        position: relative;
-      }
-      ha-textarea,
-      ha-textfield {
-        width: 100%;
-      }
-      ha-icon-button {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        inset-inline-start: initial;
-        inset-inline-end: 8px;
-        --mdc-icon-button-size: 40px;
-        --mdc-icon-size: 20px;
-        color: var(--secondary-text-color);
-        direction: var(--direction);
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      display: block;
+      position: relative;
+    }
+    ha-textarea,
+    ha-textfield {
+      width: 100%;
+    }
+    ha-icon-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      inset-inline-start: initial;
+      inset-inline-end: 8px;
+      --mdc-icon-button-size: 40px;
+      --mdc-icon-size: 20px;
+      color: var(--secondary-text-color);
+      direction: var(--direction);
+    }
+  `;
 }
 
 declare global {

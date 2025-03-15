@@ -1,14 +1,19 @@
+import "@material/mwc-list/mwc-list";
 import "@material/mwc-button/mwc-button";
 import { mdiDelete } from "@mdi/js";
-import { CSSResultGroup, LitElement, css, html, nothing } from "lit";
+import type { CSSResultGroup } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { fireEvent } from "../../../../../common/dom/fire_event";
-import "../../../../../components/ha-circular-progress";
+import "../../../../../components/ha-spinner";
+import "../../../../../components/ha-list-item";
 import { createCloseHeading } from "../../../../../components/ha-dialog";
 import "../../../../../components/ha-qr-code";
-import {
+import type {
   MatterFabricData,
   MatterNodeDiagnostics,
+} from "../../../../../data/matter";
+import {
   getMatterNodeDiagnostics,
   removeMatterFabric,
 } from "../../../../../data/matter";
@@ -17,8 +22,8 @@ import {
   showConfirmationDialog,
 } from "../../../../../dialogs/generic/show-dialog-box";
 import { haStyleDialog } from "../../../../../resources/styles";
-import { HomeAssistant } from "../../../../../types";
-import { MatterManageFabricsDialogParams } from "./show-dialog-matter-manage-fabrics";
+import type { HomeAssistant } from "../../../../../types";
+import type { MatterManageFabricsDialogParams } from "./show-dialog-matter-manage-fabrics";
 
 @customElement("dialog-matter-manage-fabrics")
 class DialogMatterManageFabrics extends LitElement {
@@ -75,7 +80,7 @@ class DialogMatterManageFabrics extends LitElement {
               )}
             </mwc-list>`
           : html`<div class="center">
-              <ha-circular-progress indeterminate></ha-circular-progress>
+              <ha-spinner></ha-spinner>
             </div>`}
       </ha-dialog>
     `;
@@ -91,7 +96,7 @@ class DialogMatterManageFabrics extends LitElement {
         this.hass,
         this.device_id
       );
-    } catch (err: any) {
+    } catch (_err: any) {
       this._nodeDiagnostics = undefined;
     }
   }
@@ -122,7 +127,7 @@ class DialogMatterManageFabrics extends LitElement {
     try {
       await removeMatterFabric(this.hass, this.device_id!, fabric.fabric_index);
       this._fetchNodeDetails();
-    } catch (err: any) {
+    } catch (_err: any) {
       showAlertDialog(this, {
         title: this.hass.localize(
           "ui.panel.config.matter.manage_fabrics.remove_fabric_failed_header",

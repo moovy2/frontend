@@ -1,36 +1,29 @@
 import "@material/mwc-button/mwc-button";
-import formatISO9075 from "date-fns/formatISO9075";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  nothing,
-  PropertyValues,
-  TemplateResult,
-} from "lit";
+import { formatISO9075 } from "date-fns";
+import type { CSSResultGroup, PropertyValues, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
 import { formatDateTime } from "../../../common/datetime/format_date_time";
 import { fireEvent } from "../../../common/dom/fire_event";
-import "../../../components/ha-circular-progress";
+import "../../../components/ha-spinner";
 import "../../../components/ha-dialog";
 import "../../../components/ha-form/ha-form";
+import "../../../components/ha-icon-next";
+import "../../../components/ha-list-item";
 import "../../../components/ha-selector/ha-selector-datetime";
 import "../../../components/ha-selector/ha-selector-number";
 import "../../../components/ha-svg-icon";
-import "../../../components/ha-icon-next";
-import "../../../components/ha-list-item";
+import type { StatisticValue } from "../../../data/recorder";
 import {
   adjustStatisticsSum,
   fetchStatistics,
   getDisplayUnit,
-  StatisticValue,
 } from "../../../data/recorder";
 import type { DateTimeSelector, NumberSelector } from "../../../data/selector";
 import { showAlertDialog } from "../../../dialogs/generic/show-dialog-box";
 import { haStyle, haStyleDialog } from "../../../resources/styles";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 import { showToast } from "../../../util/toast";
 import type { DialogStatisticsAdjustSumParams } from "./show-dialog-statistics-adjust-sum";
 
@@ -136,7 +129,7 @@ export class DialogStatisticsFixUnsupportedUnitMetadata extends LitElement {
     let stats: TemplateResult;
 
     if (!this._stats5min || !this._statsHour) {
-      stats = html`<ha-circular-progress indeterminate></ha-circular-progress>`;
+      stats = html`<ha-spinner></ha-spinner>`;
     } else if (this._statsHour.length < 1 && this._stats5min.length < 1) {
       stats = html`<p>
         ${this.hass.localize(
@@ -152,8 +145,7 @@ export class DialogStatisticsFixUnsupportedUnitMetadata extends LitElement {
         this._params!.statistic
       );
       const rows: TemplateResult[] = [];
-      for (let i = 0; i < data.length; i++) {
-        const stat = data[i];
+      for (const stat of data) {
         const growth = Math.round(stat.change! * 100) / 100;
         rows.push(html`
           <ha-list-item
@@ -534,7 +526,7 @@ export class DialogStatisticsFixUnsupportedUnitMetadata extends LitElement {
           display: flex;
           flex-direction: column;
         }
-        .stat-list ha-circular-progress {
+        .stat-list ha-spinner {
           margin: 0 auto;
         }
       `,

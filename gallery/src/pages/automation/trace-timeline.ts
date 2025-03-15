@@ -5,9 +5,9 @@ import { customElement, property } from "lit/decorators";
 import "../../../../src/components/ha-card";
 import "../../../../src/components/trace/hat-trace-timeline";
 import { provideHass } from "../../../../src/fake_data/provide_hass";
-import { HomeAssistant } from "../../../../src/types";
+import type { HomeAssistant } from "../../../../src/types";
 import { mockDemoTrace } from "../../data/traces/mock-demo-trace";
-import { DemoTrace } from "../../data/traces/types";
+import type { DemoTrace } from "../../data/traces/types";
 
 const traces: DemoTrace[] = [
   mockDemoTrace({ state: "running" }),
@@ -58,22 +58,20 @@ export class DemoAutomationTraceTimeline extends LitElement {
     hass.updateTranslations("config", "en");
   }
 
-  static get styles() {
-    return css`
-      ha-card {
-        max-width: 600px;
-        margin: 24px;
-      }
-      .card-content {
-        display: flex;
-      }
-      button {
-        position: absolute;
-        top: 0;
-        right: 0;
-      }
-    `;
-  }
+  static styles = css`
+    ha-card {
+      max-width: 600px;
+      margin: 24px;
+    }
+    .card-content {
+      display: flex;
+    }
+    button {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
+  `;
 }
 
 declare global {

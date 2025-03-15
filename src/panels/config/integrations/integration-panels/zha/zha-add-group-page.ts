@@ -1,16 +1,13 @@
 import "@material/mwc-button";
-import { css, CSSResultGroup, html, LitElement, PropertyValues } from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, property, state, query } from "lit/decorators";
 import type { HASSDomEvent } from "../../../../../common/dom/fire_event";
 import { navigate } from "../../../../../common/navigate";
 import type { SelectionChangedEvent } from "../../../../../components/data-table/ha-data-table";
-import "../../../../../components/ha-circular-progress";
-import {
-  addGroup,
-  fetchGroupableDevices,
-  ZHADeviceEndpoint,
-  ZHAGroup,
-} from "../../../../../data/zha";
+import "../../../../../components/ha-spinner";
+import type { ZHADeviceEndpoint, ZHAGroup } from "../../../../../data/zha";
+import { addGroup, fetchGroupableDevices } from "../../../../../data/zha";
 import "../../../../../layouts/hass-subpage";
 import type { HomeAssistant } from "../../../../../types";
 import "../../../ha-config-section";
@@ -24,7 +21,8 @@ export class ZHAAddGroupPage extends LitElement {
 
   @property({ type: Boolean }) public narrow = false;
 
-  @property({ type: Array }) public deviceEndpoints: ZHADeviceEndpoint[] = [];
+  @property({ attribute: false, type: Array })
+  public deviceEndpoints: ZHADeviceEndpoint[] = [];
 
   @state() private _processingAdd = false;
 
@@ -107,13 +105,12 @@ export class ZHAAddGroupPage extends LitElement {
               class="button"
             >
               ${this._processingAdd
-                ? html`<ha-circular-progress
-                    indeterminate
+                ? html`<ha-spinner
                     size="small"
                     .ariaLabel=${this.hass!.localize(
                       "ui.panel.config.zha.groups.creating_group"
                     )}
-                  ></ha-circular-progress>`
+                  ></ha-spinner>`
                 : ""}
               ${this.hass!.localize(
                 "ui.panel.config.zha.groups.create"

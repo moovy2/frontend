@@ -2,8 +2,6 @@ import "@material/mwc-button/mwc-button";
 import type { RequestSelectedDetail } from "@material/mwc-list/mwc-list-item";
 import { mdiDotsVertical } from "@mdi/js";
 import {
-  addDays,
-  addMonths,
   differenceInDays,
   differenceInMonths,
   endOfDay,
@@ -20,19 +18,19 @@ import {
   startOfWeek,
   startOfYear,
   subDays,
-} from "date-fns/esm";
-import { UnsubscribeFunc } from "home-assistant-js-websocket";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+  subMonths,
+} from "date-fns";
+import type { UnsubscribeFunc } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import memoizeOne from "memoize-one";
-import { calcDate, calcDateProperty } from "../../../common/datetime/calc_date";
+import {
+  calcDate,
+  calcDateProperty,
+  calcDateDifferenceProperty,
+  shiftDateRange,
+} from "../../../common/datetime/calc_date";
 import { firstWeekdayIndex } from "../../../common/datetime/first_weekday";
 import {
   formatDate,
@@ -48,16 +46,16 @@ import "../../../components/ha-date-range-picker";
 import type { DateRangePickerRanges } from "../../../components/ha-date-range-picker";
 import "../../../components/ha-icon-button-next";
 import "../../../components/ha-icon-button-prev";
-import { EnergyData, getEnergyDataCollection } from "../../../data/energy";
+import type { EnergyData } from "../../../data/energy";
+import { getEnergyDataCollection } from "../../../data/energy";
 import { SubscribeMixin } from "../../../mixins/subscribe-mixin";
-import { loadPolyfillIfNeeded } from "../../../resources/resize-observer.polyfill";
-import { HomeAssistant } from "../../../types";
+import type { HomeAssistant } from "../../../types";
 
 @customElement("hui-energy-period-selector")
 export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @property() public collectionKey?: string;
+  @property({ attribute: "collection-key" }) public collectionKey?: string;
 
   @property({ type: Boolean, reflect: true }) public narrow?;
 
@@ -85,7 +83,6 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
 
   private async _attachObserver(): Promise<void> {
     if (!this._resizeObserver) {
-      await loadPolyfillIfNeeded();
       this._resizeObserver = new ResizeObserver(
         debounce(() => this._measure(), 250, false)
       );
@@ -183,6 +180,30 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
           calcDate(today, startOfYear, this.hass.locale, this.hass.config),
           calcDate(today, endOfYear, this.hass.locale, this.hass.config),
         ],
+        [this.hass.localize("ui.components.date-range-picker.ranges.now-7d")]: [
+          calcDate(today, subDays, this.hass.locale, this.hass.config, 7),
+          calcDate(today, subDays, this.hass.locale, this.hass.config, 1),
+        ],
+        [this.hass.localize("ui.components.date-range-picker.ranges.now-30d")]:
+          [
+            calcDate(today, subDays, this.hass.locale, this.hass.config, 30),
+            calcDate(today, subDays, this.hass.locale, this.hass.config, 1),
+          ],
+        [this.hass.localize("ui.components.date-range-picker.ranges.now-12m")]:
+          [
+            calcDate(
+              subMonths(today, 12),
+              startOfMonth,
+              this.hass.locale,
+              this.hass.config
+            ),
+            calcDate(
+              subMonths(today, 1),
+              endOfMonth,
+              this.hass.locale,
+              this.hass.config
+            ),
+          ],
       };
     }
   }
@@ -250,16 +271,16 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
             .startDate=${this._startDate}
             .endDate=${this._endDate || new Date()}
             .ranges=${this._ranges}
-            @change=${this._dateRangeChanged}
-            .timePicker=${false}
+            @value-changed=${this._dateRangeChanged}
             minimal
+            header-position
           ></ha-date-range-picker>
         </div>
 
         ${!this.narrow
-          ? html`<mwc-button dense outlined @click=${this._pickToday}>
+          ? html`<mwc-button dense outlined @click=${this._pickNow}>
               ${this.hass.localize(
-                "ui.panel.lovelace.components.energy_period_selector.today"
+                "ui.panel.lovelace.components.energy_period_selector.now"
               )}
             </mwc-button>`
           : nothing}
@@ -300,23 +321,23 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
         (calcDateProperty(endDate, isLastDayOfMonth, locale, config) as boolean)
       ) {
         if (
-          (calcDateProperty(
+          (calcDateDifferenceProperty(
             endDate,
+            startDate,
             differenceInMonths,
             locale,
-            config,
-            startDate
+            config
           ) as number) === 0
         ) {
           return "month";
         }
         if (
-          (calcDateProperty(
+          (calcDateDifferenceProperty(
             endDate,
+            startDate,
             differenceInMonths,
             locale,
-            config,
-            startDate
+            config
           ) as number) === 2 &&
           startDate.getMonth() % 3 === 0
         ) {
@@ -326,12 +347,12 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
       if (
         calcDateProperty(startDate, isFirstDayOfMonth, locale, config) &&
         calcDateProperty(endDate, isLastDayOfMonth, locale, config) &&
-        calcDateProperty(
+        calcDateDifferenceProperty(
           endDate,
+          startDate,
           differenceInMonths,
           locale,
-          config,
-          startDate
+          config
         ) === 11
       ) {
         return "year";
@@ -351,7 +372,7 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
   private _dateRangeChanged(ev) {
     const weekStartsOn = firstWeekdayIndex(this.hass.locale);
     this._startDate = calcDate(
-      ev.detail.startDate,
+      ev.detail.value.startDate,
       startOfDay,
       this.hass.locale,
       this.hass.config,
@@ -360,7 +381,7 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
       }
     );
     this._endDate = calcDate(
-      ev.detail.endDate,
+      ev.detail.value.endDate,
       endOfDay,
       this.hass.locale,
       this.hass.config,
@@ -372,7 +393,7 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
     this._updateCollectionPeriod();
   }
 
-  private _pickToday() {
+  private _pickNow() {
     if (!this._startDate) return;
 
     const range = this._simpleRange(
@@ -468,12 +489,12 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
         );
       } else {
         // Custom date range
-        const difference = calcDateProperty(
+        const difference = calcDateDifferenceProperty(
           this._endDate!,
+          this._startDate,
           differenceInDays,
           this.hass.locale,
-          this.hass.config,
-          this._startDate
+          this.hass.config
         ) as number;
         this._startDate = calcDate(
           calcDate(
@@ -515,84 +536,15 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
 
   private _shift(forward: boolean) {
     if (!this._startDate) return;
-
-    let start: Date;
-    let end: Date;
-    if (
-      (calcDateProperty(
-        this._startDate,
-        isFirstDayOfMonth,
-        this.hass.locale,
-        this.hass.config
-      ) as boolean) &&
-      (calcDateProperty(
-        this._endDate!,
-        isLastDayOfMonth,
-        this.hass.locale,
-        this.hass.config
-      ) as boolean)
-    ) {
-      // Shift date range with respect to month/year selection
-      const difference =
-        ((calcDateProperty(
-          this._endDate!,
-          differenceInMonths,
-          this.hass.locale,
-          this.hass.config,
-          this._startDate
-        ) as number) +
-          1) *
-        (forward ? 1 : -1);
-      start = calcDate(
-        this._startDate,
-        addMonths,
-        this.hass.locale,
-        this.hass.config,
-        difference
-      );
-      end = calcDate(
-        calcDate(
-          this._endDate!,
-          addMonths,
-          this.hass.locale,
-          this.hass.config,
-          difference
-        ),
-        endOfMonth,
-        this.hass.locale,
-        this.hass.config
-      );
-    } else {
-      // Shift date range by period length
-      const difference =
-        ((calcDateProperty(
-          this._endDate!,
-          differenceInDays,
-          this.hass.locale,
-          this.hass.config,
-          this._startDate
-        ) as number) +
-          1) *
-        (forward ? 1 : -1);
-      start = calcDate(
-        this._startDate,
-        addDays,
-        this.hass.locale,
-        this.hass.config,
-        difference
-      );
-      end = calcDate(
-        this._endDate!,
-        addDays,
-        this.hass.locale,
-        this.hass.config,
-        difference
-      );
-    }
-
+    const { start, end } = shiftDateRange(
+      this._startDate,
+      this._endDate!,
+      forward,
+      this.hass.locale,
+      this.hass.config
+    );
     this._startDate = start;
     this._endDate = end;
-
     this._updateCollectionPeriod();
   }
 
@@ -614,50 +566,48 @@ export class HuiEnergyPeriodSelector extends SubscribeMixin(LitElement) {
     energyCollection.refresh();
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      .row {
-        display: flex;
-        align-items: center;
-      }
-      :host .time-handle {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-      }
-      :host([narrow]) .time-handle {
-        margin-left: auto;
-        margin-inline-start: auto;
-        margin-inline-end: initial;
-      }
-      .label {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        font-size: 20px;
-        margin-left: auto;
-        margin-inline-start: auto;
-        margin-inline-end: initial;
-      }
-      :host([narrow]) .label {
-        margin-left: unset;
-        margin-inline-start: unset;
-        margin-inline-end: initial;
-      }
-      mwc-button {
-        margin-left: 8px;
-        margin-inline-start: 8px;
-        margin-inline-end: initial;
-        flex-shrink: 0;
-        --mdc-button-outline-color: currentColor;
-        --primary-color: currentColor;
-        --mdc-theme-primary: currentColor;
-        --mdc-theme-on-primary: currentColor;
-        --mdc-button-disabled-outline-color: var(--disabled-text-color);
-        --mdc-button-disabled-ink-color: var(--disabled-text-color);
-      }
-    `;
-  }
+  static styles = css`
+    .row {
+      display: flex;
+      align-items: center;
+    }
+    :host .time-handle {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+    :host([narrow]) .time-handle {
+      margin-left: auto;
+      margin-inline-start: auto;
+      margin-inline-end: initial;
+    }
+    .label {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 20px;
+      margin-left: auto;
+      margin-inline-start: auto;
+      margin-inline-end: initial;
+    }
+    :host([narrow]) .label {
+      margin-left: unset;
+      margin-inline-start: unset;
+      margin-inline-end: initial;
+    }
+    mwc-button {
+      margin-left: 8px;
+      margin-inline-start: 8px;
+      margin-inline-end: initial;
+      flex-shrink: 0;
+      --mdc-button-outline-color: currentColor;
+      --primary-color: currentColor;
+      --mdc-theme-primary: currentColor;
+      --mdc-theme-on-primary: currentColor;
+      --mdc-button-disabled-outline-color: var(--disabled-text-color);
+      --mdc-button-disabled-ink-color: var(--disabled-text-color);
+    }
+  `;
 }
 
 declare global {

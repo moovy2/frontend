@@ -1,9 +1,10 @@
-import { css, CSSResultGroup, html, LitElement, TemplateResult } from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement } from "lit";
 import { customElement, eventOptions, property } from "lit/decorators";
 import { restoreScroll } from "../common/decorators/restore-scroll";
 import "../components/ha-icon-button-arrow-prev";
 import "../components/ha-menu-button";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
 import { haStyleScrollbar } from "../resources/styles";
 
 @customElement("hass-subpage")
@@ -125,7 +126,15 @@ class HassSubpage extends LitElement {
         .main-title {
           margin: var(--margin-title);
           line-height: 20px;
+          min-width: 0;
           flex-grow: 1;
+          overflow-wrap: break-word;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding-bottom: 1px;
         }
 
         .content {
@@ -142,9 +151,12 @@ class HassSubpage extends LitElement {
           right: calc(16px + env(safe-area-inset-right));
           inset-inline-end: calc(16px + env(safe-area-inset-right));
           inset-inline-start: initial;
-
           bottom: calc(16px + env(safe-area-inset-bottom));
           z-index: 1;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          gap: 8px;
         }
         :host([narrow]) #fab.tabs {
           bottom: calc(84px + env(safe-area-inset-bottom));

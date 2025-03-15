@@ -1,12 +1,6 @@
 import { mdiStop, mdiValveClosed, mdiValveOpen } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  TemplateResult,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { TemplateResult } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators";
 import { repeat } from "lit/directives/repeat";
 import memoizeOne from "memoize-one";
@@ -15,14 +9,14 @@ import "../../components/ha-control-button";
 import "../../components/ha-control-button-group";
 import "../../components/ha-control-slider";
 import "../../components/ha-svg-icon";
+import type { ValveEntity } from "../../data/valve";
 import {
-  ValveEntity,
   ValveEntityFeature,
   canClose,
   canOpen,
   canStop,
 } from "../../data/valve";
-import { HomeAssistant } from "../../types";
+import type { HomeAssistant } from "../../types";
 
 type ValveButton = "open" | "close" | "stop" | "none";
 
@@ -121,21 +115,19 @@ export class HaStateControlValveButtons extends LitElement {
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-control-button-group {
-        height: 45vh;
-        max-height: 320px;
-        min-height: 200px;
-        --control-button-group-spacing: 6px;
-        --control-button-group-thickness: 100px;
-      }
-      ha-control-button {
-        --control-button-border-radius: 18px;
-        --mdc-icon-size: 24px;
-      }
-    `;
-  }
+  static styles = css`
+    ha-control-button-group {
+      height: 45vh;
+      max-height: 320px;
+      min-height: 200px;
+      --control-button-group-spacing: 10px;
+      --control-button-group-thickness: 100px;
+    }
+    ha-control-button {
+      --control-button-border-radius: 36px;
+      --mdc-icon-size: 24px;
+    }
+  `;
 }
 
 declare global {

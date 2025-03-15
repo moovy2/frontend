@@ -1,4 +1,4 @@
-import { css, CSSResultGroup, html, LitElement, nothing } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
 import { styleMap } from "lit/directives/style-map";
@@ -6,9 +6,13 @@ import parseAspectRatio from "../../../common/util/parse-aspect-ratio";
 import "../../../components/ha-alert";
 import "../../../components/ha-card";
 import type { HomeAssistant } from "../../../types";
+import type {
+  LovelaceCard,
+  LovelaceCardEditor,
+  LovelaceGridOptions,
+} from "../types";
+import type { IframeCardConfig } from "./types";
 import { IFRAME_SANDBOX } from "../../../util/iframe";
-import { LovelaceCard, LovelaceCardEditor } from "../types";
-import { IframeCardConfig } from "./types";
 
 @customElement("hui-iframe-card")
 export class HuiIframeCard extends LitElement implements LovelaceCard {
@@ -25,8 +29,8 @@ export class HuiIframeCard extends LitElement implements LovelaceCard {
     };
   }
 
-  @property({ type: Boolean, reflect: true })
-  public isPanel = false;
+  @property({ attribute: false })
+  public layout?: string;
 
   @property({ attribute: false }) public hass?: HomeAssistant;
 
@@ -56,13 +60,16 @@ export class HuiIframeCard extends LitElement implements LovelaceCard {
     }
 
     let padding = "";
-    if (!this.isPanel && this._config.aspect_ratio) {
-      const ratio = parseAspectRatio(this._config.aspect_ratio);
-      if (ratio && ratio.w > 0 && ratio.h > 0) {
-        padding = `${((100 * ratio.h) / ratio.w).toFixed(2)}%`;
+    const ignoreAspectRatio = this.layout === "panel" || this.layout === "grid";
+    if (!ignoreAspectRatio) {
+      if (this._config.aspect_ratio) {
+        const ratio = parseAspectRatio(this._config.aspect_ratio);
+        if (ratio && ratio.w > 0 && ratio.h > 0) {
+          padding = `${((100 * ratio.h) / ratio.w).toFixed(2)}%`;
+        }
+      } else {
+        padding = "50%";
       }
-    } else if (!this.isPanel) {
-      padding = "50%";
     }
 
     const target_protocol = new URL(this._config.url, location.toString())
@@ -85,6 +92,9 @@ export class HuiIframeCard extends LitElement implements LovelaceCard {
     if (this._config.allow_open_top_navigation) {
       sandbox_user_params += "allow-top-navigation-by-user-activation";
     }
+    const sandbox_params = this._config.disable_sandbox
+      ? undefined
+      : `${sandbox_user_params} ${IFRAME_SANDBOX}`;
 
     return html`
       <ha-card .header=${this._config.title}>
@@ -97,44 +107,47 @@ export class HuiIframeCard extends LitElement implements LovelaceCard {
           <iframe
             title=${ifDefined(this._config.title)}
             src=${this._config.url}
-            .sandbox=${`${sandbox_user_params} ${IFRAME_SANDBOX}`}
-            allow="fullscreen"
+            sandbox=${ifDefined(sandbox_params)}
+            allow=${this._config.allow ?? "fullscreen"}
           ></iframe>
         </div>
       </ha-card>
     `;
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host([ispanel]) ha-card {
-        width: 100%;
-        height: 100%;
-      }
-
-      ha-card {
-        overflow: hidden;
-      }
-
-      #root {
-        width: 100%;
-        position: relative;
-      }
-
-      :host([ispanel]) #root {
-        height: 100%;
-      }
-
-      iframe {
-        position: absolute;
-        border: none;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-      }
-    `;
+  public getGridOptions(): LovelaceGridOptions {
+    return {
+      columns: "full",
+      rows: 4,
+      min_columns: 3,
+      min_rows: 2,
+    };
   }
+
+  static styles = css`
+    ha-card {
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #root {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    iframe {
+      position: absolute;
+      border: none;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+  `;
 }
 
 declare global {

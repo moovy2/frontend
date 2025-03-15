@@ -1,12 +1,6 @@
 import "@material/mwc-button/mwc-button";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  TemplateResult,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, TemplateResult } from "lit";
+import { css, html, LitElement, nothing } from "lit";
 import { customElement, state } from "lit/decorators";
 import { computeStateName } from "../../../../../../common/entity/compute_state_name";
 import "../../../../../../components/ha-dialog";
@@ -14,15 +8,13 @@ import "../../../../../../components/ha-formfield";
 import "../../../../../../components/ha-switch";
 import type { HaSwitch } from "../../../../../../components/ha-switch";
 import { computeDeviceName } from "../../../../../../data/device_registry";
-import {
-  fetchMQTTDebugInfo,
-  MQTTDeviceDebugInfo,
-} from "../../../../../../data/mqtt";
+import type { MQTTDeviceDebugInfo } from "../../../../../../data/mqtt";
+import { fetchMQTTDebugInfo } from "../../../../../../data/mqtt";
 import { haStyleDialog } from "../../../../../../resources/styles";
-import { HomeAssistant } from "../../../../../../types";
+import type { HomeAssistant } from "../../../../../../types";
 import "./mqtt-discovery-payload";
 import "./mqtt-messages";
-import { MQTTDeviceDebugInfoDialogParams } from "./show-dialog-mqtt-device-debug-info";
+import type { MQTTDeviceDebugInfoDialogParams } from "./show-dialog-mqtt-device-debug-info";
 
 @customElement("dialog-mqtt-device-debug-info")
 class DialogMQTTDeviceDebugInfo extends LitElement {
@@ -99,7 +91,7 @@ class DialogMQTTDeviceDebugInfo extends LitElement {
             ? this._renderEntities()
             : html`
                 ${this.hass!.localize(
-                  "ui.dialogs.mqtt_device_debug_info.no_entities"
+                  "ui.dialogs.mqtt_device_debug_info.no_entity_debug_info"
                 )}
               `}
         </ul>
@@ -111,12 +103,12 @@ class DialogMQTTDeviceDebugInfo extends LitElement {
             ? this._renderTriggers()
             : html`
                 ${this.hass!.localize(
-                  "ui.dialogs.mqtt_device_debug_info.no_triggers"
+                  "ui.dialogs.mqtt_device_debug_info.no_trigger_debug_info"
                 )}
               `}
         </ul>
         <mwc-button slot="primaryAction" @click=${this._close}>
-          ${this.hass!.localize("ui.dialogs.generic.close")}
+          ${this.hass!.localize("ui.common.close")}
         </mwc-button>
       </ha-dialog>
     `;

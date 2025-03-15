@@ -1,17 +1,18 @@
-import { mdiSofa } from "@mdi/js";
-import { CSSResultGroup, LitElement, TemplateResult, css, html } from "lit";
+import { mdiTextureBox } from "@mdi/js";
+import type { TemplateResult } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "../common/dom/fire_event";
 import { showAreaFilterDialog } from "../dialogs/area-filter/show-area-filter-dialog";
-import { HomeAssistant } from "../types";
+import type { HomeAssistant } from "../types";
+import "./ha-icon-next";
 import "./ha-svg-icon";
 import "./ha-textfield";
-import "./ha-icon-next";
 
-export type AreaFilterValue = {
+export interface AreaFilterValue {
   hidden?: string[];
   order?: string[];
-};
+}
 
 @customElement("ha-area-filter")
 export class HaAreaPicker extends LitElement {
@@ -51,7 +52,7 @@ export class HaAreaPicker extends LitElement {
         @keydown=${this._edit}
         .disabled=${this.disabled}
       >
-        <ha-svg-icon slot="graphic" .path=${mdiSofa}></ha-svg-icon>
+        <ha-svg-icon slot="graphic" .path=${mdiTextureBox}></ha-svg-icon>
         <span>${this.label}</span>
         <span slot="secondary">${description}</span>
         <ha-icon-next
@@ -79,14 +80,12 @@ export class HaAreaPicker extends LitElement {
     fireEvent(this, "value-changed", { value });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      ha-list-item {
-        --mdc-list-side-padding-left: 8px;
-        --mdc-list-side-padding-right: 8px;
-      }
-    `;
-  }
+  static styles = css`
+    ha-list-item {
+      --mdc-list-side-padding-left: 8px;
+      --mdc-list-side-padding-right: 8px;
+    }
+  `;
 }
 
 declare global {

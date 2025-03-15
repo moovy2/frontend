@@ -1,3 +1,4 @@
+import { consume } from "@lit-labs/context";
 import {
   mdiAlertCircle,
   mdiCircle,
@@ -6,16 +7,8 @@ import {
   mdiProgressWrench,
   mdiRecordCircleOutline,
 } from "@mdi/js";
-import { UnsubscribeFunc } from "home-assistant-js-websocket";
-import {
-  css,
-  CSSResultGroup,
-  html,
-  LitElement,
-  PropertyValues,
-  TemplateResult,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues, TemplateResult } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { ifDefined } from "lit/directives/if-defined";
 import { formatDateTimeWithSeconds } from "../../common/datetime/format_date_time";
@@ -23,29 +16,33 @@ import { relativeTime } from "../../common/datetime/relative_time";
 import { fireEvent } from "../../common/dom/fire_event";
 import { toggleAttribute } from "../../common/dom/toggle_attribute";
 import {
-  EntityRegistryEntry,
-  subscribeEntityRegistry,
-} from "../../data/entity_registry";
-import { LogbookEntry } from "../../data/logbook";
-import {
+  floorsContext,
+  fullEntitiesContext,
+  labelsContext,
+} from "../../data/context";
+import type { EntityRegistryEntry } from "../../data/entity_registry";
+import type { FloorRegistryEntry } from "../../data/floor_registry";
+import type { LabelRegistryEntry } from "../../data/label_registry";
+import type { LogbookEntry } from "../../data/logbook";
+import type {
   ChooseAction,
-  ChooseActionChoice,
-  getActionType,
+  Option,
   IfAction,
   ParallelAction,
   RepeatAction,
+  SequenceAction,
 } from "../../data/script";
+import { getActionType } from "../../data/script";
 import { describeAction } from "../../data/script_i18n";
-import {
+import type {
   ActionTraceStep,
   AutomationTraceExtended,
   ChooseActionTraceStep,
-  getDataFromPath,
   IfActionTraceStep,
-  isTriggerPath,
   TriggerTraceStep,
 } from "../../data/trace";
-import { HomeAssistant } from "../../types";
+import { getDataFromPath, isTriggerPath } from "../../data/trace";
+import type { HomeAssistant } from "../../types";
 import "./ha-timeline";
 import type { HaTimeline } from "./ha-timeline";
 
@@ -97,7 +94,7 @@ class RenderedTimeTracker {
 class LogbookRenderer {
   private curIndex: number;
 
-  private pendingItems: Array<[Date, LogbookEntry]> = [];
+  private pendingItems: [Date, LogbookEntry][] = [];
 
   constructor(
     private entries: TemplateResult[],
@@ -200,6 +197,8 @@ class ActionRenderer {
   constructor(
     private hass: HomeAssistant,
     private entityReg: EntityRegistryEntry[],
+    private labelReg: LabelRegistryEntry[],
+    private floorReg: Record<string, FloorRegistryEntry>,
     private entries: TemplateResult[],
     private trace: AutomationTraceExtended,
     private logbookRenderer: LogbookRenderer,
@@ -232,7 +231,7 @@ class ActionRenderer {
     const value = this._getItem(index);
 
     if (renderAllIterations) {
-      let i: number = 0;
+      let i = 0;
       value.forEach((item) => {
         i = this._renderIteration(index, item, actionType);
       });
@@ -267,7 +266,7 @@ class ActionRenderer {
     let data;
     try {
       data = getDataFromPath(this.trace.config, path);
-    } catch (err: any) {
+    } catch (_err: any) {
       this._renderEntry(
         path,
         this.hass.localize(
@@ -304,13 +303,24 @@ class ActionRenderer {
       return this._handleIf(index);
     }
 
+    if (actionType === "sequence") {
+      return this._handleSequence(index);
+    }
+
     if (actionType === "parallel") {
       return this._handleParallel(index);
     }
 
     this._renderEntry(
       path,
-      describeAction(this.hass, this.entityReg, data, actionType),
+      describeAction(
+        this.hass,
+        this.entityReg,
+        this.labelReg,
+        this.floorReg,
+        data,
+        actionType
+      ),
       undefined,
       data.enabled === false
     );
@@ -395,7 +405,7 @@ class ActionRenderer {
           : undefined;
       const choiceConfig = this._getDataFromPath(
         `${this.keys[index]}/choose/${chooseTrace.result.choice}`
-      ) as ChooseActionChoice | undefined;
+      ) as Option | undefined;
       const choiceName = choiceConfig
         ? `${
             choiceConfig.alias ||
@@ -475,7 +485,13 @@ class ActionRenderer {
 
     const name =
       repeatConfig.alias ||
-      describeAction(this.hass, this.entityReg, repeatConfig);
+      describeAction(
+        this.hass,
+        this.entityReg,
+        this.labelReg,
+        this.floorReg,
+        repeatConfig
+      );
 
     this._renderEntry(repeatPath, name, undefined, disabled);
 
@@ -560,6 +576,37 @@ class ActionRenderer {
     return i;
   }
 
+  private _handleSequence(index: number): number {
+    const sequencePath = this.keys[index];
+    const sequenceConfig = this._getDataFromPath(
+      this.keys[index]
+    ) as SequenceAction;
+
+    this._renderEntry(
+      sequencePath,
+      sequenceConfig.alias ||
+        describeAction(
+          this.hass,
+          this.entityReg,
+          this.labelReg,
+          this.floorReg,
+          sequenceConfig,
+          "sequence"
+        ),
+      undefined,
+      sequenceConfig.enabled === false
+    );
+
+    let i: number;
+
+    for (i = index + 1; i < this.keys.length; i++) {
+      const path = this.keys[i];
+      this._renderItem(i, getActionType(this._getDataFromPath(path)));
+    }
+
+    return i;
+  }
+
   private _handleParallel(index: number): number {
     const parallelPath = this.keys[index];
     const startLevel = parallelPath.split("/").length;
@@ -629,17 +676,20 @@ export class HaAutomationTracer extends LitElement {
 
   @property({ attribute: false }) public selectedPath?: string;
 
-  @property({ type: Boolean }) public allowPick = false;
+  @property({ attribute: "allow-pick", type: Boolean }) public allowPick =
+    false;
 
-  @state() private _entityReg: EntityRegistryEntry[] = [];
+  @state()
+  @consume({ context: fullEntitiesContext, subscribe: true })
+  _entityReg!: EntityRegistryEntry[];
 
-  public hassSubscribe(): UnsubscribeFunc[] {
-    return [
-      subscribeEntityRegistry(this.hass.connection!, (entities) => {
-        this._entityReg = entities;
-      }),
-    ];
-  }
+  @state()
+  @consume({ context: labelsContext, subscribe: true })
+  _labelReg!: LabelRegistryEntry[];
+
+  @state()
+  @consume({ context: floorsContext, subscribe: true })
+  _floorReg!: Record<string, FloorRegistryEntry>;
 
   protected render() {
     if (!this.trace) {
@@ -657,6 +707,8 @@ export class HaAutomationTracer extends LitElement {
     const actionRenderer = new ActionRenderer(
       this.hass,
       this._entityReg,
+      this._labelReg,
+      this._floorReg,
       entries,
       this.trace,
       logbookRenderer,
@@ -774,6 +826,7 @@ export class HaAutomationTracer extends LitElement {
         description: html`${this.hass.localize(
           `ui.panel.config.automation.trace.messages.${message}`,
           {
+            reason: this.trace.script_execution,
             time: renderFinishedAt(),
             executiontime: renderRuntime(),
           }
@@ -786,7 +839,7 @@ export class HaAutomationTracer extends LitElement {
 
     entries.push(html`
       <ha-timeline
-        lastItem
+        last-item
         .icon=${entry.icon}
         class=${ifDefined(entry.className)}
       >

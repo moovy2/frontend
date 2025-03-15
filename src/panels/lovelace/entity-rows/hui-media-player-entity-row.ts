@@ -11,15 +11,9 @@ import {
   mdiVolumeOff,
   mdiVolumePlus,
 } from "@mdi/js";
-import { HassEntity } from "home-assistant-js-websocket";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { HassEntity } from "home-assistant-js-websocket";
+import type { PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import { stateActive } from "../../../common/entity/state_active";
 import { supportsFeature } from "../../../common/entity/supports-feature";
@@ -27,13 +21,14 @@ import { debounce } from "../../../common/util/debounce";
 import "../../../components/ha-icon-button";
 import "../../../components/ha-slider";
 import { isUnavailableState } from "../../../data/entity";
-import {
+import type {
   ControlButton,
   MediaPlayerEntity,
+} from "../../../data/media-player";
+import {
   MediaPlayerEntityFeature,
   computeMediaDescription,
 } from "../../../data/media-player";
-import { loadPolyfillIfNeeded } from "../../../resources/resize-observer.polyfill";
 import type { HomeAssistant } from "../../../types";
 import { hasConfigOrEntityChanged } from "../common/has-changed";
 import "../components/hui-generic-entity-row";
@@ -291,7 +286,6 @@ class HuiMediaPlayerEntityRow extends LitElement implements LovelaceRow {
 
   private async _attachObserver(): Promise<void> {
     if (!this._resizeObserver) {
-      await loadPolyfillIfNeeded();
       this._resizeObserver = new ResizeObserver(
         debounce(() => this._measureCard(), 250, false)
       );
@@ -401,34 +395,32 @@ class HuiMediaPlayerEntityRow extends LitElement implements LovelaceRow {
     });
   }
 
-  static get styles(): CSSResultGroup {
-    return css`
-      :host {
-        display: block;
-      }
-      .flex {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      .volume {
-        display: flex;
-        align-items: center;
-        flex-grow: 2;
-        flex-shrink: 2;
-      }
-      .controls {
-        white-space: nowrap;
-        direction: ltr;
-      }
-      ha-slider {
-        flex-grow: 2;
-        flex-shrink: 2;
-        width: 100%;
-        margin: 0 -8px 0 1px;
-      }
-    `;
-  }
+  static styles = css`
+    :host {
+      display: block;
+    }
+    .flex {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .volume {
+      display: flex;
+      align-items: center;
+      flex-grow: 2;
+      flex-shrink: 2;
+    }
+    .controls {
+      white-space: nowrap;
+      direction: ltr;
+    }
+    ha-slider {
+      flex-grow: 2;
+      flex-shrink: 2;
+      width: 100%;
+      margin: 0 -8px 0 1px;
+    }
+  `;
 }
 
 declare global {

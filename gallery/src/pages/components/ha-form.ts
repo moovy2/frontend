@@ -1,6 +1,7 @@
 /* eslint-disable lit/no-template-arrow */
 import "@material/mwc-button";
-import { html, LitElement, TemplateResult } from "lit";
+import type { TemplateResult } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, state } from "lit/decorators";
 import { mockAreaRegistry } from "../../../../demo/src/stubs/area_registry";
 import { mockConfigEntries } from "../../../../demo/src/stubs/config_entries";
@@ -13,8 +14,9 @@ import type { HaFormSchema } from "../../../../src/components/ha-form/types";
 import type { AreaRegistryEntry } from "../../../../src/data/area_registry";
 import { getEntity } from "../../../../src/fake_data/entity";
 import { provideHass } from "../../../../src/fake_data/provide_hass";
-import { HomeAssistant } from "../../../../src/types";
+import type { HomeAssistant } from "../../../../src/types";
 import "../../components/demo-black-white-row";
+import type { DeviceRegistryEntry } from "../../../../src/data/device_registry";
 
 const ENTITIES = [
   getEntity("alarm_control_panel", "alarm", "disarmed", {
@@ -41,11 +43,12 @@ const ENTITIES = [
   }),
 ];
 
-const DEVICES = [
+const DEVICES: DeviceRegistryEntry[] = [
   {
     area_id: "bedroom",
     configuration_url: null,
     config_entries: ["config_entry_1"],
+    config_entries_subentries: {},
     connections: [],
     disabled_by: null,
     entry_type: null,
@@ -53,17 +56,23 @@ const DEVICES = [
     identifiers: [["demo", "volume1"] as [string, string]],
     manufacturer: null,
     model: null,
+    model_id: null,
     name_by_user: null,
     name: "Dishwasher",
     sw_version: null,
     hw_version: null,
     via_device_id: null,
     serial_number: null,
+    labels: [],
+    created_at: 0,
+    modified_at: 0,
+    primary_config_entry: null,
   },
   {
     area_id: "backyard",
     configuration_url: null,
     config_entries: ["config_entry_2"],
+    config_entries_subentries: {},
     connections: [],
     disabled_by: null,
     entry_type: null,
@@ -71,17 +80,23 @@ const DEVICES = [
     identifiers: [["demo", "pwm1"] as [string, string]],
     manufacturer: null,
     model: null,
+    model_id: null,
     name_by_user: null,
     name: "Lamp",
     sw_version: null,
     hw_version: null,
     via_device_id: null,
     serial_number: null,
+    labels: [],
+    created_at: 0,
+    modified_at: 0,
+    primary_config_entry: null,
   },
   {
     area_id: null,
     configuration_url: null,
     config_entries: ["config_entry_3"],
+    config_entries_subentries: {},
     connections: [],
     disabled_by: null,
     entry_type: null,
@@ -89,36 +104,59 @@ const DEVICES = [
     identifiers: [["demo", "pwm1"] as [string, string]],
     manufacturer: null,
     model: null,
+    model_id: null,
     name_by_user: "User name",
     name: "Technical name",
     sw_version: null,
     hw_version: null,
     via_device_id: null,
     serial_number: null,
+    labels: [],
+    created_at: 0,
+    modified_at: 0,
+    primary_config_entry: null,
   },
 ];
 
 const AREAS: AreaRegistryEntry[] = [
   {
     area_id: "backyard",
+    floor_id: null,
     name: "Backyard",
     icon: null,
     picture: null,
     aliases: [],
+    labels: [],
+    temperature_entity_id: null,
+    humidity_entity_id: null,
+    created_at: 0,
+    modified_at: 0,
   },
   {
     area_id: "bedroom",
+    floor_id: null,
     name: "Bedroom",
     icon: "mdi:bed",
     picture: null,
     aliases: [],
+    labels: [],
+    temperature_entity_id: null,
+    humidity_entity_id: null,
+    created_at: 0,
+    modified_at: 0,
   },
   {
     area_id: "livingroom",
+    floor_id: null,
     name: "Livingroom",
     icon: "mdi:sofa",
     picture: null,
     aliases: [],
+    labels: [],
+    temperature_entity_id: null,
+    humidity_entity_id: null,
+    created_at: 0,
+    modified_at: 0,
   },
 ];
 
@@ -460,14 +498,8 @@ class DemoHaForm extends LitElement {
             .title=${info.title}
             .value=${this.data[idx]}
             .disabled=${this.disabled[idx]}
-            @submitted=${() => {
-              this.disabled[idx] = true;
-              this.requestUpdate();
-              setTimeout(() => {
-                this.disabled[idx] = false;
-                this.requestUpdate();
-              }, 2000);
-            }}
+            @submitted=${this._handleSubmit}
+            .sampleIdx=${idx}
           >
             ${["light", "dark"].map(
               (slot) => html`
@@ -481,10 +513,9 @@ class DemoHaForm extends LitElement {
                   .computeError=${(error) => translations[error] || error}
                   .computeLabel=${(schema) =>
                     translations[schema.name] || schema.name}
-                  @value-changed=${(e) => {
-                    this.data[idx] = e.detail.value;
-                    this.requestUpdate();
-                  }}
+                  .computeHelper=${() => "Helper text"}
+                  @value-changed=${this._handleValueChanged}
+                  .sampleIdx=${idx}
                 ></ha-form>
               `
             )}
@@ -492,6 +523,22 @@ class DemoHaForm extends LitElement {
         `;
       })}
     `;
+  }
+
+  private _handleValueChanged(ev) {
+    const sampleIdx = ev.target.sampleIdx;
+    this.data[sampleIdx] = ev.detail.value;
+    this.requestUpdate();
+  }
+
+  private _handleSubmit(ev) {
+    const sampleIdx = ev.target.sampleIdx;
+    this.disabled[sampleIdx] = true;
+    this.requestUpdate();
+    setTimeout(() => {
+      this.disabled[sampleIdx] = false;
+      this.requestUpdate();
+    }, 2000);
   }
 }
 

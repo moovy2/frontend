@@ -1,36 +1,20 @@
 import "@material/mwc-button";
 import { mdiClose, mdiHelpCircle } from "@mdi/js";
 import type { UnsubscribeFunc } from "home-assistant-js-websocket";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
-import { customElement, state } from "lit/decorators";
-import { HASSDomEvent, fireEvent } from "../../common/dom/fire_event";
-import "../../components/ha-circular-progress";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { LitElement, css, html, nothing } from "lit";
+import { customElement, property, state } from "lit/decorators";
+import type { HASSDomEvent } from "../../common/dom/fire_event";
+import { fireEvent } from "../../common/dom/fire_event";
 import "../../components/ha-dialog";
 import "../../components/ha-icon-button";
-import {
-  AreaRegistryEntry,
-  subscribeAreaRegistry,
-} from "../../data/area_registry";
-import {
-  DataEntryFlowStep,
-  subscribeDataEntryFlowProgressed,
-} from "../../data/data_entry_flow";
-import {
-  DeviceRegistryEntry,
-  subscribeDeviceRegistry,
-} from "../../data/device_registry";
+import type { DataEntryFlowStep } from "../../data/data_entry_flow";
+import { subscribeDataEntryFlowProgressed } from "../../data/data_entry_flow";
 import { haStyleDialog } from "../../resources/styles";
 import type { HomeAssistant } from "../../types";
 import { documentationUrl } from "../../util/documentation-url";
 import { showAlertDialog } from "../generic/show-dialog-box";
-import {
+import type {
   DataEntryFlowDialogParams,
   LoadingReason,
 } from "./show-dialog-data-entry-flow";
@@ -62,7 +46,7 @@ declare global {
 
 @customElement("dialog-data-entry-flow")
 class DataEntryFlowDialog extends LitElement {
-  public hass!: HomeAssistant;
+  @property({ attribute: false }) public hass!: HomeAssistant;
 
   @state() private _params?: DataEntryFlowDialogParams;
 
@@ -76,15 +60,7 @@ class DataEntryFlowDialog extends LitElement {
     // Null means we need to pick a config flow
     | null;
 
-  @state() private _devices?: DeviceRegistryEntry[];
-
-  @state() private _areas?: AreaRegistryEntry[];
-
   @state() private _handler?: string;
-
-  private _unsubAreas?: UnsubscribeFunc;
-
-  private _unsubDevices?: UnsubscribeFunc;
 
   private _unsubDataEntryFlowProgressed?: Promise<UnsubscribeFunc>;
 
@@ -183,16 +159,7 @@ class DataEntryFlowDialog extends LitElement {
     this._loading = undefined;
     this._step = undefined;
     this._params = undefined;
-    this._devices = undefined;
     this._handler = undefined;
-    if (this._unsubAreas) {
-      this._unsubAreas();
-      this._unsubAreas = undefined;
-    }
-    if (this._unsubDevices) {
-      this._unsubDevices();
-      this._unsubDevices = undefined;
-    }
     if (this._unsubDataEntryFlowProgressed) {
       this._unsubDataEntryFlowProgressed.then((unsub) => {
         unsub();
@@ -261,9 +228,7 @@ class DataEntryFlowDialog extends LitElement {
                         `
                       : ""}
                     <ha-icon-button
-                      .label=${this.hass.localize(
-                        "ui.panel.config.integrations.config_flow.dismiss"
-                      )}
+                      .label=${this.hass.localize("ui.common.close")}
                       .path=${mdiClose}
                       dialogAction="close"
                     ></ha-icon-button>
@@ -309,25 +274,15 @@ class DataEntryFlowDialog extends LitElement {
                                   .hass=${this.hass}
                                 ></step-flow-menu>
                               `
-                            : this._devices === undefined ||
-                                this._areas === undefined
-                              ? // When it's a create entry result, we will fetch device & area registry
-                                html`
-                                  <step-flow-loading
-                                    .flowConfig=${this._params.flowConfig}
-                                    .hass=${this.hass}
-                                    loadingReason="loading_devices_areas"
-                                  ></step-flow-loading>
-                                `
-                              : html`
-                                  <step-flow-create-entry
-                                    .flowConfig=${this._params.flowConfig}
-                                    .step=${this._step}
-                                    .hass=${this.hass}
-                                    .devices=${this._devices}
-                                    .areas=${this._areas}
-                                  ></step-flow-create-entry>
-                                `}
+                            : html`
+                                <step-flow-create-entry
+                                  .flowConfig=${this._params.flowConfig}
+                                  .step=${this._step}
+                                  .hass=${this.hass}
+                                  .navigateToResult=${this._params
+                                    .navigateToResult}
+                                ></step-flow-create-entry>
+                              `}
                 `}
         </div>
       </ha-dialog>
@@ -351,63 +306,36 @@ class DataEntryFlowDialog extends LitElement {
       // external and progress step will send update event from the backend, so we should subscribe to them
       this._subscribeDataEntryFlowProgressed();
     }
-    if (this._step.type === "create_entry") {
-      if (this._step.result && this._params!.flowConfig.loadDevicesAndAreas) {
-        this._fetchDevices(this._step.result.entry_id);
-        this._fetchAreas();
-      } else {
-        this._devices = [];
-        this._areas = [];
-      }
-    }
-  }
-
-  private async _fetchDevices(configEntryId) {
-    this._unsubDevices = subscribeDeviceRegistry(
-      this.hass.connection,
-      (devices) => {
-        this._devices = devices.filter((device) =>
-          device.config_entries.includes(configEntryId)
-        );
-      }
-    );
-  }
-
-  private async _fetchAreas() {
-    this._unsubAreas = subscribeAreaRegistry(this.hass.connection, (areas) => {
-      this._areas = areas;
-    });
   }
 
   private async _processStep(
     step: DataEntryFlowStep | undefined | Promise<DataEntryFlowStep>
   ): Promise<void> {
-    if (step instanceof Promise) {
-      this._loading = "loading_step";
-      try {
-        this._step = await step;
-      } catch (err: any) {
-        this.closeDialog();
-        showAlertDialog(this, {
-          title: this.hass.localize(
-            "ui.panel.config.integrations.config_flow.error"
-          ),
-          text: err?.body?.message,
-        });
-        return;
-      } finally {
-        this._loading = undefined;
-      }
-      return;
-    }
-
     if (step === undefined) {
       this.closeDialog();
       return;
     }
+
+    this._loading = "loading_step";
+    let _step: DataEntryFlowStep;
+    try {
+      _step = await step;
+    } catch (err: any) {
+      this.closeDialog();
+      showAlertDialog(this, {
+        title: this.hass.localize(
+          "ui.panel.config.integrations.config_flow.error"
+        ),
+        text: err?.body?.message,
+      });
+      return;
+    } finally {
+      this._loading = undefined;
+    }
+
     this._step = undefined;
     await this.updateComplete;
-    this._step = step;
+    this._step = _step;
   }
 
   private async _subscribeDataEntryFlowProgressed() {

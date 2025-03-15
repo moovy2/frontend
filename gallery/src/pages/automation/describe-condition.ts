@@ -3,11 +3,11 @@ import { css, html, LitElement, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators";
 import "../../../../src/components/ha-card";
 import "../../../../src/components/ha-yaml-editor";
-import { Condition } from "../../../../src/data/automation";
+import type { Condition } from "../../../../src/data/automation";
 import { describeCondition } from "../../../../src/data/automation_i18n";
 import { getEntity } from "../../../../src/fake_data/entity";
 import { provideHass } from "../../../../src/fake_data/provide_hass";
-import { HomeAssistant } from "../../../../src/types";
+import type { HomeAssistant } from "../../../../src/types";
 
 const ENTITIES = [
   getEntity("light", "kitchen", "on", {
@@ -98,26 +98,24 @@ export class DemoAutomationDescribeCondition extends LitElement {
     this._condition = ev.detail.isValid ? ev.detail.value : undefined;
   }
 
-  static get styles() {
-    return css`
-      ha-card {
-        max-width: 600px;
-        margin: 24px auto;
-      }
-      .condition {
-        padding: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-      span {
-        margin-right: 16px;
-      }
-      ha-yaml-editor {
-        width: 50%;
-      }
-    `;
-  }
+  static styles = css`
+    ha-card {
+      max-width: 600px;
+      margin: 24px auto;
+    }
+    .condition {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    span {
+      margin-right: 16px;
+    }
+    ha-yaml-editor {
+      width: 50%;
+    }
+  `;
 }
 
 declare global {

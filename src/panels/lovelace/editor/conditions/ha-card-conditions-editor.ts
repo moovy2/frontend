@@ -1,32 +1,28 @@
 import { mdiPlus } from "@mdi/js";
-import {
-  CSSResultGroup,
-  LitElement,
-  PropertyValues,
-  css,
-  html,
-  nothing,
-} from "lit";
+import type { CSSResultGroup, PropertyValues } from "lit";
+import { LitElement, css, html } from "lit";
 import { customElement, property } from "lit/decorators";
 import { fireEvent } from "../../../../common/dom/fire_event";
 import { stopPropagation } from "../../../../common/dom/stop_propagation";
-import "../../../../components/ha-alert";
 import "../../../../components/ha-button";
 import "../../../../components/ha-list-item";
 import type { HaSelect } from "../../../../components/ha-select";
 import "../../../../components/ha-svg-icon";
 import type { HomeAssistant } from "../../../../types";
 import { ICON_CONDITION } from "../../common/icon-condition";
-import { Condition, LegacyCondition } from "../../common/validate-condition";
+import type {
+  Condition,
+  LegacyCondition,
+} from "../../common/validate-condition";
 import "./ha-card-condition-editor";
 import type { HaCardConditionEditor } from "./ha-card-condition-editor";
-import { LovelaceConditionEditorConstructor } from "./types";
+import type { LovelaceConditionEditorConstructor } from "./types";
+import "./types/ha-card-condition-and";
 import "./types/ha-card-condition-numeric_state";
+import "./types/ha-card-condition-or";
 import "./types/ha-card-condition-screen";
 import "./types/ha-card-condition-state";
 import "./types/ha-card-condition-user";
-import "./types/ha-card-condition-or";
-import "./types/ha-card-condition-and";
 
 const UI_CONDITION = [
   "numeric_state",
@@ -45,8 +41,6 @@ export class HaCardConditionsEditor extends LitElement {
     | Condition
     | LegacyCondition
   )[];
-
-  @property({ type: Boolean }) public nested = false;
 
   private _focusLastConditionOnChange = false;
 
@@ -83,15 +77,6 @@ export class HaCardConditionsEditor extends LitElement {
   protected render() {
     return html`
       <div class="conditions">
-        ${!this.nested
-          ? html`
-              <ha-alert alert-type="info">
-                ${this.hass!.localize(
-                  "ui.panel.lovelace.editor.condition-editor.explanation"
-                )}
-              </ha-alert>
-            `
-          : nothing}
         ${this.conditions.map(
           (cond, idx) => html`
             <ha-card-condition-editor
@@ -172,9 +157,6 @@ export class HaCardConditionsEditor extends LitElement {
   static get styles(): CSSResultGroup {
     return [
       css`
-        mwc-tab-bar {
-          border-bottom: 1px solid var(--divider-color);
-        }
         ha-alert {
           display: block;
           margin-top: 12px;

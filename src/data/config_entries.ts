@@ -1,6 +1,6 @@
 import type { UnsubscribeFunc } from "home-assistant-js-websocket";
 import type { HomeAssistant } from "../types";
-import type { IntegrationManifest, IntegrationType } from "./integration";
+import type { IntegrationType } from "./integration";
 
 export interface ConfigEntry {
   entry_id: string;
@@ -19,11 +19,39 @@ export interface ConfigEntry {
   supports_remove_device: boolean;
   supports_unload: boolean;
   supports_reconfigure: boolean;
+  supported_subentry_types: Record<string, { supports_reconfigure: boolean }>;
+  num_subentries: number;
   pref_disable_new_entities: boolean;
   pref_disable_polling: boolean;
   disabled_by: "user" | null;
   reason: string | null;
+  error_reason_translation_key: string | null;
+  error_reason_translation_placeholders: Record<string, string> | null;
 }
+
+export interface SubEntry {
+  subentry_id: string;
+  subentry_type: string;
+  title: string;
+  unique_id: string;
+}
+
+export const getSubEntries = (hass: HomeAssistant, entry_id: string) =>
+  hass.callWS<SubEntry[]>({
+    type: "config_entries/subentries/list",
+    entry_id,
+  });
+
+export const deleteSubEntry = (
+  hass: HomeAssistant,
+  entry_id: string,
+  subentry_id: string
+) =>
+  hass.callWS({
+    type: "config_entries/subentries/delete",
+    entry_id,
+    subentry_id,
+  });
 
 export type ConfigEntryMutableParams = Partial<
   Pick<
@@ -147,20 +175,19 @@ export const enableConfigEntry = (hass: HomeAssistant, configEntryId: string) =>
 
 export const sortConfigEntries = (
   configEntries: ConfigEntry[],
-  manifestLookup: { [domain: string]: IntegrationManifest }
+  primaryConfigEntry: string | null
 ): ConfigEntry[] => {
-  const sortedConfigEntries = [...configEntries];
-
-  const getScore = (entry: ConfigEntry) => {
-    const manifest = manifestLookup[entry.domain] as
-      | IntegrationManifest
-      | undefined;
-    const isHelper = manifest?.integration_type === "helper";
-    return isHelper ? -1 : 1;
-  };
-
-  const configEntriesCompare = (a: ConfigEntry, b: ConfigEntry) =>
-    getScore(b) - getScore(a);
-
-  return sortedConfigEntries.sort(configEntriesCompare);
+  if (!primaryConfigEntry) {
+    return configEntries;
+  }
+  const primaryEntry = configEntries.find(
+    (e) => e.entry_id === primaryConfigEntry
+  );
+  if (!primaryEntry) {
+    return configEntries;
+  }
+  const otherEntries = configEntries.filter(
+    (e) => e.entry_id !== primaryConfigEntry
+  );
+  return [primaryEntry, ...otherEntries];
 };

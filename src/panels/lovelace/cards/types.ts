@@ -1,21 +1,27 @@
-import { HaDurationData } from "../../../components/ha-duration-input";
-import { ActionConfig } from "../../../data/lovelace/config/action";
-import { LovelaceCardConfig } from "../../../data/lovelace/config/card";
-import { Statistic, StatisticType } from "../../../data/recorder";
-import { ForecastType } from "../../../data/weather";
-import { FullCalendarView, TranslationDict } from "../../../types";
-import { LovelaceCardFeatureConfig } from "../card-features/types";
-import { LegacyStateFilter } from "../common/evaluate-filter";
-import { Condition, LegacyCondition } from "../common/validate-condition";
-import { HuiImage } from "../components/hui-image";
-import { TimestampRenderingFormat } from "../components/types";
-import { LovelaceElementConfig } from "../elements/types";
-import {
+import type { HassServiceTarget } from "home-assistant-js-websocket";
+import type { HaDurationData } from "../../../components/ha-duration-input";
+import type { ActionConfig } from "../../../data/lovelace/config/action";
+import type { LovelaceCardConfig } from "../../../data/lovelace/config/card";
+import type { Statistic, StatisticType } from "../../../data/recorder";
+import type { ForecastType } from "../../../data/weather";
+import type {
+  FullCalendarView,
+  ThemeMode,
+  TranslationDict,
+} from "../../../types";
+import type { LovelaceCardFeatureConfig } from "../card-features/types";
+import type { LegacyStateFilter } from "../common/evaluate-filter";
+import type { Condition, LegacyCondition } from "../common/validate-condition";
+import type { HuiImage } from "../components/hui-image";
+import type { TimestampRenderingFormat } from "../components/types";
+import type { LovelaceElementConfig } from "../elements/types";
+import type {
   EntityConfig,
   EntityFilterEntityConfig,
   LovelaceRowConfig,
 } from "../entity-rows/types";
-import { LovelaceHeaderFooterConfig } from "../header-footer/types";
+import type { LovelaceHeaderFooterConfig } from "../header-footer/types";
+import type { LovelaceHeadingBadgeConfig } from "../heading-badges/types";
 
 export type AlarmPanelCardConfigState =
   | "arm_away"
@@ -66,6 +72,8 @@ export interface EntitiesCardEntityConfig extends EntityConfig {
     | "tilt-position"
     | "brightness";
   action_name?: string;
+  action?: string;
+  /** @deprecated use "action" instead */
   service?: string;
   // "service_data" is kept for backwards compatibility. Replaced by "data".
   service_data?: Record<string, unknown>;
@@ -83,7 +91,7 @@ export interface EntitiesCardConfig extends LovelaceCardConfig {
   type: "entities";
   show_header_toggle?: boolean;
   title?: string;
-  entities: Array<LovelaceRowConfig | string>;
+  entities: (LovelaceRowConfig | string)[];
   theme?: string;
   icon?: string;
   header?: LovelaceHeaderFooterConfig;
@@ -118,92 +126,87 @@ export interface EnergyCardBaseConfig extends LovelaceCardConfig {
   collection_key?: string;
 }
 
-export interface EnergySummaryCardConfig extends LovelaceCardConfig {
+export interface EnergySummaryCardConfig extends EnergyCardBaseConfig {
   type: "energy-summary";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergyDistributionCardConfig extends LovelaceCardConfig {
+export interface EnergyDistributionCardConfig extends EnergyCardBaseConfig {
   type: "energy-distribution";
   title?: string;
   link_dashboard?: boolean;
-  collection_key?: string;
 }
-export interface EnergyUsageGraphCardConfig extends LovelaceCardConfig {
-  type: "energy-summary-graph";
+export interface EnergyUsageGraphCardConfig extends EnergyCardBaseConfig {
+  type: "energy-usage-graph";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergySolarGraphCardConfig extends LovelaceCardConfig {
+export interface EnergySolarGraphCardConfig extends EnergyCardBaseConfig {
   type: "energy-solar-graph";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergyGasGraphCardConfig extends LovelaceCardConfig {
+export interface EnergyGasGraphCardConfig extends EnergyCardBaseConfig {
   type: "energy-gas-graph";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergyWaterGraphCardConfig extends LovelaceCardConfig {
+export interface EnergyWaterGraphCardConfig extends EnergyCardBaseConfig {
   type: "energy-water-graph";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergyDevicesGraphCardConfig extends LovelaceCardConfig {
+export interface EnergyDevicesGraphCardConfig extends EnergyCardBaseConfig {
   type: "energy-devices-graph";
   title?: string;
-  collection_key?: string;
   max_devices?: number;
 }
 
-export interface EnergyDevicesDetailGraphCardConfig extends LovelaceCardConfig {
+export interface EnergyDevicesDetailGraphCardConfig
+  extends EnergyCardBaseConfig {
   type: "energy-devices-detail-graph";
   title?: string;
-  collection_key?: string;
   max_devices?: number;
 }
 
-export interface EnergySourcesTableCardConfig extends LovelaceCardConfig {
+export interface EnergySourcesTableCardConfig extends EnergyCardBaseConfig {
   type: "energy-sources-table";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergySolarGaugeCardConfig extends LovelaceCardConfig {
+export interface EnergySolarGaugeCardConfig extends EnergyCardBaseConfig {
   type: "energy-solar-consumed-gauge";
   title?: string;
-  collection_key?: string;
 }
 
 export interface EnergySelfSufficiencyGaugeCardConfig
-  extends LovelaceCardConfig {
+  extends EnergyCardBaseConfig {
   type: "energy-self-sufficiency-gauge";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergyGridGaugeCardConfig extends LovelaceCardConfig {
-  type: "energy-grid-result-gauge";
+export interface EnergyGridNeutralityGaugeCardConfig
+  extends EnergyCardBaseConfig {
+  type: "energy-grid-neutrality-gauge";
   title?: string;
-  collection_key?: string;
 }
 
-export interface EnergyCarbonGaugeCardConfig extends LovelaceCardConfig {
+export interface EnergyCarbonGaugeCardConfig extends EnergyCardBaseConfig {
   type: "energy-carbon-consumed-gauge";
   title?: string;
-  collection_key?: string;
+}
+
+export interface EnergySankeyCardConfig extends EnergyCardBaseConfig {
+  type: "energy-sankey";
+  title?: string;
+  layout?: "vertical" | "horizontal";
 }
 
 export interface EntityFilterCardConfig extends LovelaceCardConfig {
   type: "entity-filter";
-  entities: Array<EntityFilterEntityConfig | string>;
-  state_filter?: Array<LegacyStateFilter>;
-  conditions: Array<Condition>;
+  entities: (EntityFilterEntityConfig | string)[];
+  state_filter?: LegacyStateFilter[];
+  conditions: Condition[];
   card?: Partial<LovelaceCardConfig>;
   show_empty?: boolean;
 }
@@ -235,6 +238,9 @@ export interface GaugeCardConfig extends LovelaceCardConfig {
   theme?: string;
   needle?: boolean;
   segments?: GaugeSegment[];
+  tap_action?: ActionConfig;
+  hold_action?: ActionConfig;
+  double_tap_action?: ActionConfig;
 }
 
 export interface ConfigEntity extends EntityConfig {
@@ -280,7 +286,9 @@ export interface HumidifierCardConfig extends LovelaceCardConfig {
 export interface IframeCardConfig extends LovelaceCardConfig {
   allow_open_top_navigation?: boolean;
   aspect_ratio?: string;
+  disable_sandbox?: boolean;
   title?: string;
+  allow?: string;
   url: string;
 }
 
@@ -296,10 +304,20 @@ export interface LightCardConfig extends LovelaceCardConfig {
 
 export interface LogbookCardConfig extends LovelaceCardConfig {
   type: "logbook";
-  entities: string[];
+  /**
+   * @deprecated Use target instead
+   */
+  entities?: string[];
+  target: HassServiceTarget;
   title?: string;
   hours_to_show?: number;
   theme?: string;
+}
+
+interface GeoLocationSourceConfig {
+  source: string;
+  label_mode?: "name" | "state" | "icon";
+  focus?: boolean;
 }
 
 export interface MapCardConfig extends LovelaceCardConfig {
@@ -309,19 +327,22 @@ export interface MapCardConfig extends LovelaceCardConfig {
   auto_fit?: boolean;
   fit_zones?: boolean;
   default_zoom?: number;
-  entities?: Array<EntityConfig | string>;
+  entities?: (EntityConfig | string)[];
   hours_to_show?: number;
-  geo_location_sources?: string[];
+  geo_location_sources?: (GeoLocationSourceConfig | string)[];
   dark_mode?: boolean;
+  theme_mode?: ThemeMode;
 }
 
 export interface MarkdownCardConfig extends LovelaceCardConfig {
   type: "markdown";
   content: string;
+  text_only?: boolean;
   title?: string;
   card_size?: number;
   entity_ids?: string | string[];
   theme?: string;
+  show_empty?: boolean;
 }
 
 export interface MediaControlCardConfig extends LovelaceCardConfig {
@@ -330,7 +351,7 @@ export interface MediaControlCardConfig extends LovelaceCardConfig {
 }
 
 export interface HistoryGraphCardConfig extends LovelaceCardConfig {
-  entities: Array<EntityConfig | string>;
+  entities: (EntityConfig | string)[];
   hours_to_show?: number;
   title?: string;
   show_names?: boolean;
@@ -339,28 +360,36 @@ export interface HistoryGraphCardConfig extends LovelaceCardConfig {
   max_y_axis?: number;
   fit_y_data?: boolean;
   split_device_classes?: boolean;
+  expand_legend?: boolean;
 }
 
-export interface StatisticsGraphCardConfig extends LovelaceCardConfig {
+export interface StatisticsGraphCardConfig extends EnergyCardBaseConfig {
   title?: string;
-  entities: Array<EntityConfig | string>;
+  entities: (EntityConfig | string)[];
   unit?: string;
   days_to_show?: number;
   period?: "5minute" | "hour" | "day" | "month";
   stat_types?: StatisticType | StatisticType[];
   chart_type?: "line" | "bar";
+  min_y_axis?: number;
+  max_y_axis?: number;
+  fit_y_data?: boolean;
   hide_legend?: boolean;
   logarithmic_scale?: boolean;
+  energy_date_selection?: boolean;
+  expand_legend?: boolean;
 }
 
 export interface StatisticCardConfig extends LovelaceCardConfig {
   name?: string;
-  entities: Array<EntityConfig | string>;
-  period: {
-    fixed_period?: { start: string; end: string };
-    calendar?: { period: string; offset: number };
-    rolling_window?: { duration: HaDurationData; offset: HaDurationData };
-  };
+  entities: (EntityConfig | string)[];
+  period:
+    | {
+        fixed_period?: { start: string; end: string };
+        calendar?: { period: string; offset: number };
+        rolling_window?: { duration: HaDurationData; offset: HaDurationData };
+      }
+    | "energy_date_selection";
   stat_type: keyof Statistic;
   theme?: string;
 }
@@ -409,9 +438,10 @@ export interface PictureEntityCardConfig extends LovelaceCardConfig {
 }
 
 export interface PictureGlanceCardConfig extends LovelaceCardConfig {
-  entities: Array<string | PictureGlanceEntityConfig>;
+  entities: (string | PictureGlanceEntityConfig)[];
   title?: string;
   image?: string;
+  image_entity?: string;
   camera_image?: string;
   camera_view?: HuiImage["cameraView"];
   state_image?: Record<string, unknown>;
@@ -454,6 +484,9 @@ export interface TodoListCardConfig extends LovelaceCardConfig {
   title?: string;
   theme?: string;
   entity?: string;
+  hide_completed?: boolean;
+  hide_create?: boolean;
+  sort?: string;
 }
 
 export interface StackCardConfig extends LovelaceCardConfig {
@@ -480,63 +513,9 @@ export interface WeatherForecastCardConfig extends LovelaceCardConfig {
   show_current?: boolean;
   show_forecast?: boolean;
   forecast_type?: ForecastType;
+  forecast_slots?: number;
   secondary_info_attribute?: keyof TranslationDict["ui"]["card"]["weather"]["attributes"];
   theme?: string;
-  tap_action?: ActionConfig;
-  hold_action?: ActionConfig;
-  double_tap_action?: ActionConfig;
-}
-
-export interface EnergyFlowCardConfig extends LovelaceCardConfig {
-  type: string;
-  name?: string;
-  show_header_toggle?: boolean;
-
-  show_warning?: boolean;
-  show_error?: boolean;
-  test_gui?: boolean;
-  show_w_not_kw?: any;
-  hide_inactive_lines?: boolean;
-  threshold_in_k?: number;
-  energy_flow_diagramm?: boolean;
-  energy_flow_diagramm_lines_factor?: number;
-  change_house_bubble_color_with_flow?: boolean;
-
-  grid_icon?: string;
-  generation_icon?: string;
-  house_icon?: string;
-  battery_icon?: string;
-  appliance1_icon?: string;
-  appliance2_icon?: string;
-
-  icon_entities?: Map<string, string>;
-  line_entities?: Map<string, string>;
-
-  house_entity?: string;
-  battery_entity?: string;
-  generation_entity?: string;
-  grid_entity?: string;
-
-  grid_to_house_entity?: string;
-  grid_to_battery_entity?: string;
-
-  generation_to_grid_entity?: string;
-  generation_to_battery_entity?: string;
-  generation_to_house_entity?: string;
-
-  battery_to_house_entity?: string;
-  battery_to_grid_entity?: string;
-
-  grid_extra_entity?: string;
-  generation_extra_entity?: string;
-  house_extra_entity?: string;
-  battery_extra_entity?: string;
-
-  appliance1_consumption_entity?: string;
-  appliance1_extra_entity?: string;
-  appliance2_consumption_entity?: string;
-  appliance2_extra_entity?: string;
-
   tap_action?: ActionConfig;
   hold_action?: ActionConfig;
   double_tap_action?: ActionConfig;
@@ -555,5 +534,18 @@ export interface TileCardConfig extends LovelaceCardConfig {
   hold_action?: ActionConfig;
   double_tap_action?: ActionConfig;
   icon_tap_action?: ActionConfig;
+  icon_hold_action?: ActionConfig;
+  icon_double_tap_action?: ActionConfig;
   features?: LovelaceCardFeatureConfig[];
+  features_position?: "bottom" | "inline";
+}
+
+export interface HeadingCardConfig extends LovelaceCardConfig {
+  heading_style?: "title" | "subtitle";
+  heading?: string;
+  icon?: string;
+  tap_action?: ActionConfig;
+  badges?: LovelaceHeadingBadgeConfig[];
+  /** @deprecated Use `badges` instead */
+  entities?: LovelaceHeadingBadgeConfig[];
 }
